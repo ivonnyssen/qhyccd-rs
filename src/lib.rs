@@ -239,7 +239,7 @@ pub struct ReadoutMode {
 /// # Example
 ///
 /// ```no_run
-/// # use libqhyccd_sys::init_sdk;
+/// # use libqhyccd::init_sdk;
 /// use eyre::Result;
 ///
 /// let result = init_sdk();
@@ -271,7 +271,7 @@ pub fn release_sdk() -> Result<()> {
 /// # Example
 ///
 /// ```no_run
-/// # use libqhyccd_sys::scan_qhyccd;
+/// # use libqhyccd::scan_qhyccd;
 /// use eyre::Result;
 ///
 /// let result = scan_qhyccd().unwrap();
@@ -299,8 +299,8 @@ pub struct SDKVersion {
 /// Get the QHYCCD SDK version
 /// # Example
 /// ```no_run
-/// # use libqhyccd_sys::get_sdk_version;
-/// # use libqhyccd_sys::SDKVersion;
+/// # use libqhyccd::get_sdk_version;
+/// # use libqhyccd::SDKVersion;
 /// use eyre::Result;
 ///
 /// let version = get_sdk_version().unwrap();
