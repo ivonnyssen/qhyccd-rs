@@ -1,4 +1,4 @@
-use libqhyccd::{
+use qhyccd_rs::{
     close_camera, get_camera_id, get_number_of_readout_modes, get_readout_mode,
     get_readout_mode_name, get_readout_mode_resolution, get_sdk_version, init_camera, init_sdk,
     open_camera, release_sdk, scan_qhyccd, set_readout_mode, set_stream_mode, CameraStreamMode,

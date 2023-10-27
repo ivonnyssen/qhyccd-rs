@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use std::{thread, time::Duration};
 
-use libqhyccd::{
+use qhyccd_rs::{
     begin_live, close_camera, end_live, get_camera_id, get_ccd_info, get_effective_area,
     get_firmware_version, get_image_size, get_live_frame, get_overscan_area, get_sdk_version,
     init_camera, init_sdk, is_feature_supported, open_camera, release_sdk, scan_qhyccd,

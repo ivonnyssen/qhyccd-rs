@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use libqhyccd::{
+use qhyccd_rs::{
     close_camera, get_camera_id, get_ccd_info, get_effective_area, get_firmware_version,
     get_image_size, get_overscan_area, get_sdk_version, get_single_frame, init_camera, init_sdk,
     is_feature_supported, open_camera, release_sdk, scan_qhyccd, set_bin_mode, set_bit_mode,
