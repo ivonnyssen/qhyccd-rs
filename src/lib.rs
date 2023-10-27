@@ -271,7 +271,7 @@ pub fn release_sdk() -> Result<()> {
 /// # Example
 ///
 /// ```no_run
-/// # use qhyccd_rs:::scan_qhyccd;
+/// # use qhyccd_rs::scan_qhyccd;
 /// use eyre::Result;
 ///
 /// let result = scan_qhyccd().unwrap();
@@ -299,8 +299,8 @@ pub struct SDKVersion {
 /// Get the QHYCCD SDK version
 /// # Example
 /// ```no_run
-/// # use qhyccd_rs:::get_sdk_version;
-/// # use qhyccd_rs:::SDKVersion;
+/// # use qhyccd_rs::get_sdk_version;
+/// # use qhyccd_rs::SDKVersion;
 /// use eyre::Result;
 ///
 /// let version = get_sdk_version().unwrap();
