@@ -76,4 +76,5 @@ sudo sh install.sh
 
 ## Usage Examples
 [src/bin/LiveFrameMode.rs](https://github.com/ivonnyssen/qhyccd-rs/blob/main/src/bin/LiveFrameMode.rs)
+
 [src/bin/SingleFrameMode.rs](https://github.com/ivonnyssen/qhyccd-rs/blob/main/src/bin/SingleFrameMode.rs)
