@@ -8,6 +8,9 @@ license = "MIT OR Apache-2.0"
 description = "Rust bindings for libqhyccd"
 edition = "2021"
 rust-version = "1.64.0" # for std::ffi::c_char
+exclude = [
+    "qhyccd-sdk/*"
+]
 
 [lib]
 name = "libqhyccd_sys"

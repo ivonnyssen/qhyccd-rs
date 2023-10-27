@@ -13,6 +13,7 @@ This crate provides a safe interface to the QHYCCD SDK for controlling QHYCCD ca
 The libqhyccd-sys crate provides the raw FFI bindings. It uses tracing for logging and eyre for error handling.
 """
 categories = ["astronomy", "api-bindings"]
+homepage = "https://github.com/ivonnyssen/qhyccd-rs/wiki"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
