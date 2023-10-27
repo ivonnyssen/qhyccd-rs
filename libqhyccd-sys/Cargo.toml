@@ -9,7 +9,7 @@ description = "Rust bindings for libqhyccd"
 edition = "2021"
 rust-version = "1.64.0" # for std::ffi::c_char
 exclude = [
-    "qhyccd-sdk/"
+    "qhyccd-sdk/*"
 ]
 
 [lib]
