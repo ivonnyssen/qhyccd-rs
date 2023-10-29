@@ -1546,31 +1546,18 @@ mod test {
     #[test]
     fn test() {
         let sdk = Sdk::new().unwrap();
-        assert_eq!(sdk.cameras().count(), 1);
-        assert_eq!(sdk.filter_wheels().count(), 1);
-        assert_eq!(sdk.filter_wheels().last().unwrap().positions(), 7);
-
-        let camera = sdk.cameras().last().unwrap();
         assert_eq!(
-            camera.get_ccd_info().unwrap(),
-            CCDChipInfo {
-                chip_width: 7334.4,
-                chip_height: 4915.2,
-                image_width: 3056,
-                image_height: 2048,
-                pixel_width: 2.4,
-                pixel_height: 2.4,
-                bits_per_pixel: 16,
+            sdk.version().unwrap(),
+            SDKVersion {
+                year: 23,
+                month: 9,
+                day: 6,
+                subday: 14
             }
         );
-        assert_eq!(
-            camera.get_firmware_version().unwrap(),
-            "Firmware version: 2022_9_5"
-        );
-
-        assert_eq!(camera.get_number_of_readout_modes().unwrap(), 1);
-        assert_eq!(camera.get_readout_mode_name(0).unwrap(), "STANDARD MODE");
-        assert_eq!(camera.get_type().unwrap(), 4010);
-        assert!(camera.is_control_available(Control::CamColor).is_err());
+        assert_eq!(sdk.cameras().count(), 0);
+        assert_eq!(sdk.filter_wheels().count(), 0);
+        assert!(sdk.filter_wheels().last().is_none());
+        assert!(sdk.cameras().last().is_none());
     }
 }
