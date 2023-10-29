@@ -34,7 +34,7 @@ jobs:
         run: cargo test --locked --all-features --all-targets
       # https://github.com/rust-lang/cargo/issues/6669
       - name: cargo test --doc
-        run: cargo test --locked --all-features --doc
+        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --doc
   minimal:
     runs-on: ubuntu-latest
     name: ubuntu / stable / minimal-versions
@@ -53,7 +53,7 @@ jobs:
       - name: cargo update -Zminimal-versions
         run: cargo +nightly update -Zminimal-versions
       - name: cargo test
-        run: cargo test --locked --all-features --all-targets
+        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --all-targets
 #  os-check:
 #    runs-on: ${{ matrix.os }}
 #    name: ${{ matrix.os }} / stable
