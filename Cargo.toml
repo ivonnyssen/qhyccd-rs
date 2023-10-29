@@ -2,7 +2,7 @@
 name = "qhyccd-rs"
 version = "0.1.0"
 authors = ["Igor von Nyssen<igor@vonnyssen.com>"]
-license = "MIT or Apache-2.0"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["qhyccd", "astronomy", "camera"]
 repository = "https://github.com/ivonnyssen/qhyccd-rs"
