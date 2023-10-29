@@ -1,8 +1,8 @@
 # qhyccd-rs
-[![Crates.io](https://img.shields.io/crates/v/libqhyccd.svg)](https://crates.io/crates/libqhyccd)
-[![Documentation](https://docs.rs/libqhyccd/badge.svg)](https://docs.rs/libqhyccd/)
-[![Codecov](https://codecov.io/github/ivonnyssen/libqhyccd/coverage.svg?branch=main)](https://codecov.io/gh/ivonnyssen/libqhyccd)
-[![Dependency status](https://deps.rs/repo/github/ivonnyssen/libqhyccd/status.svg)](https://deps.rs/repo/github/ivonnyssen/libqhyccd)
+[![Crates.io](https://img.shields.io/crates/v/qhyccd-rs.svg)](https://crates.io/crates/qhyccd-rs)
+[![Documentation](https://docs.rs/qhyccd-rs/badge.svg)](https://docs.rs/qhyccd-rs/)
+[![Codecov](https://codecov.io/github/ivonnyssen/qhyccd-rs/coverage.svg?branch=main)](https://codecov.io/gh/ivonnyssen/qhyccd-rs)
+[![Dependency status](https://deps.rs/repo/github/ivonnyssen/qhyccd-rs/status.svg)](https://deps.rs/repo/github/ivonnyssen/qhyccd-rs)
 
 libqhyccd bindings for Rust.
 
