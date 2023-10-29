@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use std::{thread, time::Duration};
 
-use qhyccd_rs::{CameraStreamMode, Control, Sdk};
+use qhyccd_rs::{Control, Sdk, StreamMode};
 use tracing::trace;
 use tracing_subscriber::FmtSubscriber;
 
@@ -18,10 +18,8 @@ fn main() {
     let sdk_version = sdk.version().expect("get_sdk_version failed");
     trace!(sdk_version = ?sdk_version);
 
-    let mut cameras = sdk.cameras().expect("scan_qhyccd failed");
-    trace!(number = ?cameras);
-
-    let camera = cameras.remove(0);
+    let camera = sdk.cameras().last().expect("no camera found");
+    trace!(camera = ?camera);
 
     let fw_version = camera
         .get_firmware_version()
@@ -40,9 +38,9 @@ fn main() {
         .set_readout_mode(0)
         .expect("set_camera_read_mode failed");
     camera
-        .set_stream_mode(CameraStreamMode::LiveMode)
+        .set_stream_mode(StreamMode::LiveMode)
         .expect("set_camera_stream_mode failed");
-    let camera = camera.init().expect("init_camera failed");
+    camera.init().expect("init_camera failed");
     let info = camera.get_ccd_info().expect("get_camera_ccd_info failed");
     trace!(ccd_info = ?info);
 
@@ -66,19 +64,19 @@ fn main() {
         .expect("set_camera_roi failed");
     trace!(roi = ?effective_area);
     camera
-        .set_parameter(Control::ControlTransferBit, 8.0)
+        .set_parameter(Control::TransferBit, 8.0)
         .expect("set_camera_parameter failed");
     trace!(control_transferbit = 8.0);
     camera
-        .set_parameter(Control::ControlExposure, 2000.0)
+        .set_parameter(Control::Exposure, 2000.0)
         .expect("set_camera_parameter failed");
     trace!(control_exposure = 2000.0);
     camera
-        .set_parameter(Control::ControlUsbTraffic, 255.0)
+        .set_parameter(Control::UsbTraffic, 255.0)
         .expect("set_camera_parameter failed");
     trace!(control_usb_traffic = 255.0);
     camera
-        .set_parameter(Control::ControlDDR, 1.0)
+        .set_parameter(Control::DDR, 1.0)
         .expect("set_camera_parameter failed");
     trace!(control_ddr = 1.0);
     camera.begin_live().expect("begin_camera_live failed");

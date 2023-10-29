@@ -1,4 +1,4 @@
-use std::ffi::c_char;
+use core::ffi::c_char;
 
 pub const QHYCCD_PCIE: u32 = 9;
 pub const QHYCCD_WINPCAP: u32 = 8;
@@ -10,9 +10,10 @@ pub const QHYCCD_MONO: u32 = 3;
 pub const QHYCCD_COOL: u32 = 2;
 pub const QHYCCD_NOTCOO: u32 = 1;
 pub const QHYCCD_SUCCESS: u32 = 0;
-pub const QHYCCD_ERROR: u32 = 0xFFFFFFFF;
+pub const QHYCCD_ERROR: u32 = u32::MAX;
+pub const QHYCCD_ERROR_F64: f64 = u32::MAX as f64;
 
-pub type QhyccdHandle = *const std::ffi::c_void;
+pub type QhyccdHandle = *const core::ffi::c_void;
 
 #[link(name = "qhyccd", kind = "static")]
 extern "C" {
@@ -47,6 +48,7 @@ extern "C" {
     pub fn SetQHYCCDBinMode(handle: QhyccdHandle, wbin: u32, hbin: u32) -> u32;
     pub fn SetQHYCCDResolution(handle: QhyccdHandle, x: u32, y: u32, xsize: u32, ysize: u32)
         -> u32;
+    pub fn GetQHYCCDParam(handle: QhyccdHandle, controlId: u32) -> f64;
     pub fn SetQHYCCDParam(handle: QhyccdHandle, controlId: u32, value: f64) -> u32;
     pub fn BeginQHYCCDLive(handle: QhyccdHandle) -> u32;
     pub fn GetQHYCCDMemLength(handle: QhyccdHandle) -> u32;
@@ -98,4 +100,5 @@ extern "C" {
     pub fn GetQHYCCDExposureRemaining(handle: QhyccdHandle) -> u32;
     pub fn CancelQHYCCDExposing(handle: QhyccdHandle) -> u32;
     pub fn CancelQHYCCDExposingAndReadout(handle: QhyccdHandle) -> u32;
+    pub fn IsQHYCCDCFWPlugged(handle: QhyccdHandle) -> u32;
 }

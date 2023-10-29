@@ -1,4 +1,4 @@
-use qhyccd_rs::{CameraStreamMode, Sdk};
+use qhyccd_rs::{Sdk, StreamMode};
 use tracing::trace;
 use tracing_subscriber::FmtSubscriber;
 
@@ -14,21 +14,20 @@ fn main() {
     let sdk_version = sdk.version().expect("get_sdk_version failed");
     trace!(sdk_version = ?sdk_version);
 
-    let mut cameras = sdk.cameras().expect("scan_qhyccd failed");
-    trace!(number = ?cameras);
+    let camera = sdk.cameras().last().expect("no camera found");
+    trace!(camera = ?camera);
 
-    let camera = cameras.remove(0);
     camera
-        .set_stream_mode(CameraStreamMode::SingleFrameMode)
+        .set_stream_mode(StreamMode::SingleFrameMode)
         .expect("set_camera_stream_mode failed");
-    trace!(set_camera_stream_mode = ?CameraStreamMode::SingleFrameMode);
+    trace!(set_camera_stream_mode = ?StreamMode::SingleFrameMode);
 
     camera
         .set_readout_mode(0)
         .expect("set_camera_read_mode failed");
     trace!(set_camera_read_mode = 0);
 
-    let camera = camera.init().expect("init_camera failed");
+    camera.init().expect("init_camera failed");
 
     let number_of_readout_modes = camera.get_number_of_readout_modes().unwrap();
     trace!(number_of_readout_modes = ?number_of_readout_modes);

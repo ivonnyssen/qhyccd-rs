@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use qhyccd_rs::{CameraStreamMode, Control, Sdk};
+use qhyccd_rs::{Control, Sdk, StreamMode};
 use tracing::{error, trace};
 use tracing_subscriber::FmtSubscriber;
 
@@ -14,11 +14,10 @@ fn main() {
     let sdk = Sdk::new().expect("SDK::new failed");
     let sdk_version = sdk.version().expect("get_sdk_version failed");
     trace!(sdk_version = ?sdk_version);
+    trace!(cameras = ?sdk.cameras().count());
+    trace!(filter_wheels = ?sdk.filter_wheels().count());
 
-    let mut cameras = sdk.cameras().expect("scan_qhyccd failed");
-    trace!(number = ?cameras);
-
-    let camera = cameras.remove(0);
+    let camera = sdk.cameras().last().expect("no camera found");
     trace!(camera = ?camera);
 
     let fw_version = camera
@@ -35,16 +34,16 @@ fn main() {
     trace!("CameraFeature::CamSingleFrameMode is supported");
 
     camera
-        .set_stream_mode(CameraStreamMode::SingleFrameMode)
+        .set_stream_mode(StreamMode::SingleFrameMode)
         .expect("set_camera_stream_mode failed");
-    trace!(set_camera_stream_mode = ?CameraStreamMode::SingleFrameMode);
+    trace!(set_camera_stream_mode = ?StreamMode::SingleFrameMode);
 
     camera
         .set_readout_mode(0)
         .expect("set_camera_read_mode failed");
     trace!(set_camera_read_mode = 0);
 
-    let camera = camera.init().expect("init_camera failed");
+    camera.init().expect("init_camera failed");
 
     let over_scan_area = camera
         .get_overscan_area()
@@ -62,39 +61,24 @@ fn main() {
     let camera_is_color = camera.is_control_available(Control::CamColor).is_ok(); //this returns a BayerID if it is a color camera
     trace!(camera_is_color = ?camera_is_color);
 
-    match camera.is_control_available(Control::ControlUsbTraffic) {
-        Ok(_) => {
-            trace!(control_usb_traffic = 10);
-            camera
-                .set_parameter(Control::ControlUsbTraffic, 255.0)
-                .expect("set_camera_parameter failed");
-        }
+    match camera.set_if_available(Control::UsbTraffic, 255.0) {
+        Ok(_) => trace!(control_usb_traffic = 255.0),
         Err(_) => {
             error!("ControlUsbTraffic is not supported");
             return;
         }
     }
 
-    match camera.is_control_available(Control::ControlGain) {
-        Ok(_) => {
-            trace!(control_gain = 10);
-            camera
-                .set_parameter(Control::ControlGain, 10.0)
-                .expect("setting gain failed");
-        }
+    match camera.set_if_available(Control::Gain, 10.0) {
+        Ok(_) => trace!(control_gain = 10),
         Err(_) => {
             error!("ControlGain is not supported");
             return;
         }
     }
 
-    match camera.is_control_available(Control::ControlOffset) {
-        Ok(_) => {
-            trace!(control_offset = 140);
-            camera
-                .set_parameter(Control::ControlOffset, 140.0)
-                .expect("setting offset failed");
-        }
+    match camera.set_if_available(Control::Offset, 140.0) {
+        Ok(_) => trace!(control_offset = 140),
         Err(_) => {
             error!("ControlOffset is not supported");
             return;
@@ -102,7 +86,7 @@ fn main() {
     }
 
     camera
-        .set_parameter(Control::ControlExposure, 2000.0)
+        .set_parameter(Control::Exposure, 2000.0)
         .expect("setting exposure time failed");
     trace!(exposure_time = 2000.0);
 
@@ -116,13 +100,8 @@ fn main() {
         .expect("set_camera_bin_mode failed");
     trace!(bin_mode = "(1, 1)");
 
-    match camera.is_control_available(Control::ControlTransferBit) {
-        Ok(_) => {
-            trace!(cam_transfer_bit = 16.0);
-            camera
-                .set_bit_mode(16)
-                .expect("setting transfer bits to 16 failed");
-        }
+    match camera.set_if_available(Control::TransferBit, 16.0) {
+        Ok(_) => trace!(cam_transfer_bit = 16.0),
         Err(_) => {
             error!("setting transfer bits is not supported");
             return;
