@@ -35,4 +35,5 @@ async fn is_full(w: &mut World) {
 #[tokio::main]
 async fn main() {
     World::run("tests/features/book").await;
+    World::run("tests/features/sdk").await;
 }
