@@ -6,6 +6,35 @@ use core::ffi::CStr;
 
 use eyre::eyre;
 use eyre::Result;
+
+mod mocks;
+
+#[cfg(not(test))]
+use libqhyccd_sys::{
+    BeginQHYCCDLive, CancelQHYCCDExposing, CancelQHYCCDExposingAndReadout, CloseQHYCCD,
+    ExpQHYCCDSingleFrame, GetQHYCCDChipInfo, GetQHYCCDEffectiveArea, GetQHYCCDExposureRemaining,
+    GetQHYCCDFWVersion, GetQHYCCDId, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
+    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDReadMode,
+    GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion, GetQHYCCDSingleFrame,
+    GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
+    OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode, SetQHYCCDBitsMode,
+    SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution,
+    SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
+};
+
+#[cfg(test)]
+use crate::mocks::mock_libqhyccd_sys::{
+    BeginQHYCCDLive, CancelQHYCCDExposing, CancelQHYCCDExposingAndReadout, CloseQHYCCD,
+    ExpQHYCCDSingleFrame, GetQHYCCDChipInfo, GetQHYCCDEffectiveArea, GetQHYCCDExposureRemaining,
+    GetQHYCCDFWVersion, GetQHYCCDId, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
+    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDReadMode,
+    GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion, GetQHYCCDSingleFrame,
+    GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
+    OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode, SetQHYCCDBitsMode,
+    SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution,
+    SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
+};
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -441,6 +470,7 @@ pub struct Sdk {
     cameras: Vec<Camera>,
 }
 
+#[allow(unused_unsafe)]
 impl Sdk {
     /// Creates a new instance of the SDK
     /// # Example
@@ -450,10 +480,10 @@ impl Sdk {
     /// assert!(sdk.is_ok());
     /// ```
     pub fn new() -> Result<Self> {
-        match unsafe { libqhyccd_sys::InitQHYCCDResource() } {
-            libqhyccd_sys::QHYCCD_SUCCESS => {
-                let num_cameras = match unsafe { libqhyccd_sys::ScanQHYCCD() } {
-                    libqhyccd_sys::QHYCCD_ERROR => {
+        match unsafe { InitQHYCCDResource() } {
+            QHYCCD_SUCCESS => {
+                let num_cameras = match unsafe { ScanQHYCCD() } {
+                    QHYCCD_ERROR => {
                         let error = QHYError::ScanQHYCCDError;
                         tracing::error!(error = error.to_string().as_str());
                         Err(eyre!(error))
@@ -466,8 +496,8 @@ impl Sdk {
                     let id = {
                         let mut c_id: [c_char; 32] = [0; 32];
                         unsafe {
-                            match libqhyccd_sys::GetQHYCCDId(index, c_id.as_mut_ptr()) {
-                                libqhyccd_sys::QHYCCD_SUCCESS => {
+                            match GetQHYCCDId(index, c_id.as_mut_ptr()) {
+                                QHYCCD_SUCCESS => {
                                     let id = match CStr::from_ptr(c_id.as_ptr()).to_str() {
                                         Ok(id) => id,
                                         Err(error) => {
@@ -547,10 +577,8 @@ impl Sdk {
         let mut month: u32 = 0;
         let mut day: u32 = 0;
         let mut subday: u32 = 0;
-        match unsafe {
-            libqhyccd_sys::GetQHYCCDSDKVersion(&mut year, &mut month, &mut day, &mut subday)
-        } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(SDKVersion {
+        match unsafe { GetQHYCCDSDKVersion(&mut year, &mut month, &mut day, &mut subday) } {
+            QHYCCD_SUCCESS => Ok(SDKVersion {
                 year,
                 month,
                 day,
@@ -565,10 +593,11 @@ impl Sdk {
     }
 }
 
+#[allow(unused_unsafe)]
 impl Drop for Sdk {
     fn drop(&mut self) {
-        match unsafe { libqhyccd_sys::ReleaseQHYCCDResource() } {
-            libqhyccd_sys::QHYCCD_SUCCESS => (),
+        match unsafe { ReleaseQHYCCDResource() } {
+            QHYCCD_SUCCESS => (),
             error_code => {
                 let error = QHYError::CloseSDKError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -585,6 +614,7 @@ pub struct Camera {
     handle: *const std::ffi::c_void,
 }
 
+#[allow(unused_unsafe)]
 impl Camera {
     /// Creates a new instance of the camera, the sdk does this automatically so do not use this function directly
     /// but rather use the iterators provided by the sdk to obtain the connected cameras and filter wheels
@@ -599,7 +629,7 @@ impl Camera {
         unsafe {
             match std::ffi::CString::new(id.clone()) {
                 Ok(c_id) => {
-                    let handle = libqhyccd_sys::OpenQHYCCD(c_id.as_ptr());
+                    let handle = OpenQHYCCD(c_id.as_ptr());
                     if handle.is_null() {
                         let error = QHYError::OpenCameraError;
                         tracing::error!(error = error.to_string().as_str());
@@ -636,8 +666,8 @@ impl Camera {
     /// camera.set_stream_mode(StreamMode::LiveMode).expect("set_stream_mode failed");
     /// ```
     pub fn set_stream_mode(&self, mode: StreamMode) -> Result<()> {
-        match unsafe { libqhyccd_sys::SetQHYCCDStreamMode(self.handle, mode as u8) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { SetQHYCCDStreamMode(self.handle, mode as u8) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::SetStreamModeError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -656,8 +686,8 @@ impl Camera {
     ///
     /// camera.set_readout_mode(0).expect("set_readout_mode failed");
     pub fn set_readout_mode(&self, mode: u32) -> Result<()> {
-        match unsafe { libqhyccd_sys::SetQHYCCDReadMode(self.handle, mode) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { SetQHYCCDReadMode(self.handle, mode) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::SetReadoutModeError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -677,8 +707,8 @@ impl Camera {
     /// ```
     pub fn get_model(&self) -> Result<String> {
         let mut model: [c_char; 80] = [0; 80];
-        match unsafe { libqhyccd_sys::GetQHYCCDModel(self.handle, model.as_mut_ptr()) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => {
+        match unsafe { GetQHYCCDModel(self.handle, model.as_mut_ptr()) } {
+            QHYCCD_SUCCESS => {
                 let model = match unsafe { CStr::from_ptr(model.as_ptr()) }.to_str() {
                     Ok(model) => model,
                     Err(error) => {
@@ -706,8 +736,8 @@ impl Camera {
     /// camera.init().expect("init failed");
     /// ```
     pub fn init(&self) -> Result<()> {
-        match unsafe { libqhyccd_sys::InitQHYCCD(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { InitQHYCCD(self.handle) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::InitCameraError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -727,8 +757,8 @@ impl Camera {
     /// ```
     pub fn get_firmware_version(&self) -> Result<String> {
         let mut version = [0u8; 32];
-        match unsafe { libqhyccd_sys::GetQHYCCDFWVersion(self.handle, version.as_mut_ptr()) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => {
+        match unsafe { GetQHYCCDFWVersion(self.handle, version.as_mut_ptr()) } {
+            QHYCCD_SUCCESS => {
                 if version[0] >> 4 <= 9 {
                     Ok(format!(
                         "Firmware version: 20{}_{}_{}",
@@ -764,10 +794,8 @@ impl Camera {
     /// ```
     pub fn get_number_of_readout_modes(&self) -> Result<u32> {
         let mut num: u32 = 0;
-        match unsafe {
-            libqhyccd_sys::GetQHYCCDNumberOfReadModes(self.handle, &mut num as *mut u32)
-        } {
-            libqhyccd_sys::QHYCCD_ERROR => {
+        match unsafe { GetQHYCCDNumberOfReadModes(self.handle, &mut num as *mut u32) } {
+            QHYCCD_ERROR => {
                 let error = QHYError::GetNumberOfReadoutModesError;
                 tracing::error!(error = error.to_string().as_str());
                 Err(eyre!(error))
@@ -790,9 +818,8 @@ impl Camera {
     /// ```
     pub fn get_readout_mode_name(&self, index: u32) -> Result<String> {
         let mut name: [c_char; 80] = [0; 80];
-        match unsafe { libqhyccd_sys::GetQHYCCDReadModeName(self.handle, index, name.as_mut_ptr()) }
-        {
-            libqhyccd_sys::QHYCCD_ERROR => {
+        match unsafe { GetQHYCCDReadModeName(self.handle, index, name.as_mut_ptr()) } {
+            QHYCCD_ERROR => {
                 let error = QHYError::GetReadoutModeNameError;
                 tracing::error!(error = error.to_string().as_str());
                 Err(eyre!(error))
@@ -826,14 +853,14 @@ impl Camera {
         let mut width: u32 = 0;
         let mut height: u32 = 0;
         match unsafe {
-            libqhyccd_sys::GetQHYCCDReadModeResolution(
+            GetQHYCCDReadModeResolution(
                 self.handle,
                 index,
                 &mut width as *mut u32,
                 &mut height as *mut u32,
             )
         } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok((width, height)),
+            QHYCCD_SUCCESS => Ok((width, height)),
             _ => {
                 let error = QHYError::GetReadoutModeResolutionError;
                 tracing::error!(error = error.to_string().as_str());
@@ -854,8 +881,8 @@ impl Camera {
     /// ```
     pub fn get_readout_mode(&self) -> Result<u32> {
         let mut mode: u32 = 0;
-        match unsafe { libqhyccd_sys::GetQHYCCDReadMode(self.handle, &mut mode as *mut u32) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(mode),
+        match unsafe { GetQHYCCDReadMode(self.handle, &mut mode as *mut u32) } {
+            QHYCCD_SUCCESS => Ok(mode),
             _ => {
                 let error = QHYError::GetReadoutModeError;
                 tracing::error!(error = error.to_string().as_str());
@@ -875,8 +902,8 @@ impl Camera {
     /// println!("Type: {}", tipe);
     /// ```
     pub fn get_type(&self) -> Result<u32> {
-        match unsafe { libqhyccd_sys::GetQHYCCDType(self.handle) } {
-            libqhyccd_sys::QHYCCD_ERROR => {
+        match unsafe { GetQHYCCDType(self.handle) } {
+            QHYCCD_ERROR => {
                 let error = QHYError::GetCameraTypeError;
                 tracing::error!(error = error.to_string().as_str());
                 Err(eyre!(error))
@@ -896,8 +923,8 @@ impl Camera {
     /// camera.set_bin_mode(2, 2).expect("set_bin_mode failed");
     /// ```
     pub fn set_bin_mode(&self, bin_x: u32, bin_y: u32) -> Result<()> {
-        match unsafe { libqhyccd_sys::SetQHYCCDBinMode(self.handle, bin_x, bin_y) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { SetQHYCCDBinMode(self.handle, bin_x, bin_y) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::SetBinModeError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -916,8 +943,8 @@ impl Camera {
     /// camera.set_debayer(false).expect("set_debayer failed");
     ///```
     pub fn set_debayer(&self, on: bool) -> Result<()> {
-        match unsafe { libqhyccd_sys::SetQHYCCDDebayerOnOff(self.handle, on) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { SetQHYCCDDebayerOnOff(self.handle, on) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::SetDebayerError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -944,15 +971,9 @@ impl Camera {
     /// ```
     pub fn set_roi(&self, roi: CCDChipArea) -> Result<()> {
         match unsafe {
-            libqhyccd_sys::SetQHYCCDResolution(
-                self.handle,
-                roi.start_x,
-                roi.start_y,
-                roi.width,
-                roi.height,
-            )
+            SetQHYCCDResolution(self.handle, roi.start_x, roi.start_y, roi.width, roi.height)
         } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::SetRoiError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -972,8 +993,8 @@ impl Camera {
     /// camera.begin_live().expect("begin_live failed");
     /// ```
     pub fn begin_live(&self) -> Result<()> {
-        match unsafe { libqhyccd_sys::BeginQHYCCDLive(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { BeginQHYCCDLive(self.handle) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::BeginLiveError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -995,8 +1016,8 @@ impl Camera {
     /// camera.end_live().expect("end_live failed");
     /// ```
     pub fn end_live(&self) -> Result<()> {
-        match unsafe { libqhyccd_sys::StopQHYCCDLive(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { StopQHYCCDLive(self.handle) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::EndLiveError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -1021,8 +1042,8 @@ impl Camera {
     /// let image = camera.get_single_frame(buffer_size).expect("get_camera_single_frame failed");
     /// ```
     pub fn get_image_size(&self) -> Result<usize> {
-        match unsafe { libqhyccd_sys::GetQHYCCDMemLength(self.handle) } {
-            libqhyccd_sys::QHYCCD_ERROR => {
+        match unsafe { GetQHYCCDMemLength(self.handle) } {
+            QHYCCD_ERROR => {
                 let error = QHYError::GetImageSizeError;
                 tracing::error!(error = error.to_string().as_str());
                 Err(eyre!(error))
@@ -1063,7 +1084,7 @@ impl Camera {
         let mut channels: u32 = 0;
         let mut buffer = vec![0u8; buffer_size];
         match unsafe {
-            libqhyccd_sys::GetQHYCCDLiveFrame(
+            GetQHYCCDLiveFrame(
                 self.handle,
                 &mut width as *mut u32,
                 &mut height as *mut u32,
@@ -1072,7 +1093,7 @@ impl Camera {
                 buffer.as_mut_ptr(),
             )
         } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(ImageData {
+            QHYCCD_SUCCESS => Ok(ImageData {
                 data: buffer,
                 width,
                 height,
@@ -1109,7 +1130,7 @@ impl Camera {
         let mut channels: u32 = 0;
         let mut buffer = vec![0u8; buffer_size];
         match unsafe {
-            libqhyccd_sys::GetQHYCCDSingleFrame(
+            GetQHYCCDSingleFrame(
                 self.handle,
                 &mut width as *mut u32,
                 &mut height as *mut u32,
@@ -1118,7 +1139,7 @@ impl Camera {
                 buffer.as_mut_ptr(),
             )
         } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(ImageData {
+            QHYCCD_SUCCESS => Ok(ImageData {
                 data: buffer,
                 width,
                 height,
@@ -1148,7 +1169,7 @@ impl Camera {
         let mut width: u32 = 0;
         let mut height: u32 = 0;
         match unsafe {
-            libqhyccd_sys::GetQHYCCDOverScanArea(
+            GetQHYCCDOverScanArea(
                 self.handle,
                 &mut start_x as *mut u32,
                 &mut start_y as *mut u32,
@@ -1156,7 +1177,7 @@ impl Camera {
                 &mut height as *mut u32,
             )
         } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(CCDChipArea {
+            QHYCCD_SUCCESS => Ok(CCDChipArea {
                 start_x,
                 start_y,
                 width,
@@ -1185,7 +1206,7 @@ impl Camera {
         let mut width: u32 = 0;
         let mut height: u32 = 0;
         match unsafe {
-            libqhyccd_sys::GetQHYCCDEffectiveArea(
+            GetQHYCCDEffectiveArea(
                 self.handle,
                 &mut start_x as *mut u32,
                 &mut start_y as *mut u32,
@@ -1193,7 +1214,7 @@ impl Camera {
                 &mut height as *mut u32,
             )
         } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(CCDChipArea {
+            QHYCCD_SUCCESS => Ok(CCDChipArea {
                 start_x,
                 start_y,
                 width,
@@ -1222,8 +1243,8 @@ impl Camera {
     /// camera.start_single_frame_exposure().expect("start_single_frame_exposure failed");
     /// ```
     pub fn start_single_frame_exposure(&self) -> Result<()> {
-        match unsafe { libqhyccd_sys::ExpQHYCCDSingleFrame(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { ExpQHYCCDSingleFrame(self.handle) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::StartSingleFrameExposureError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -1245,8 +1266,8 @@ impl Camera {
     /// println!("Remaining exposure: {}", remaining_exposure);
     /// ```
     pub fn get_remaining_exposure_us(&self) -> Result<u32> {
-        match unsafe { libqhyccd_sys::GetQHYCCDExposureRemaining(self.handle) } {
-            libqhyccd_sys::QHYCCD_ERROR => {
+        match unsafe { GetQHYCCDExposureRemaining(self.handle) } {
+            QHYCCD_ERROR => {
                 let error = QHYError::GetExposureRemainingError;
                 tracing::error!(error = error.to_string().as_str());
                 Err(eyre!(error))
@@ -1269,8 +1290,8 @@ impl Camera {
     /// /* retrieve image data */
     /// ```
     pub fn stop_exposure(&self) -> Result<()> {
-        match unsafe { libqhyccd_sys::CancelQHYCCDExposing(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { CancelQHYCCDExposing(self.handle) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::StopExposureError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -1290,8 +1311,8 @@ impl Camera {
     /// camera.abort_exposure_and_readout().expect("abort_exposure failed");
     /// ```
     pub fn abort_exposure_and_readout(&self) -> Result<()> {
-        match unsafe { libqhyccd_sys::CancelQHYCCDExposingAndReadout(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { CancelQHYCCDExposingAndReadout(self.handle) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::AbortExposureAndReadoutError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -1317,8 +1338,8 @@ impl Camera {
     /// let camera_is_color = camera.is_control_available(Control::CamColor).is_ok(); //this returns a `BayerID` if it is a color camera
     /// ```
     pub fn is_control_available(&self, control: Control) -> Result<u32> {
-        match unsafe { libqhyccd_sys::IsQHYCCDControlAvailable(self.handle, control as u32) } {
-            libqhyccd_sys::QHYCCD_ERROR => {
+        match unsafe { IsQHYCCDControlAvailable(self.handle, control as u32) } {
+            QHYCCD_ERROR => {
                 let error = QHYError::IsFeatureSupportedError { feature: control };
                 tracing::error!(error = error.to_string().as_str());
                 Err(eyre!(error))
@@ -1345,7 +1366,7 @@ impl Camera {
         let mut pixelh: f64 = 0.0;
         let mut bpp: u32 = 0;
         match unsafe {
-            libqhyccd_sys::GetQHYCCDChipInfo(
+            GetQHYCCDChipInfo(
                 self.handle,
                 &mut chipw as *mut f64,
                 &mut chiph as *mut f64,
@@ -1356,7 +1377,7 @@ impl Camera {
                 &mut bpp as *mut u32,
             )
         } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(CCDChipInfo {
+            QHYCCD_SUCCESS => Ok(CCDChipInfo {
                 chip_width: chipw,
                 chip_height: chiph,
                 image_width: imagew,
@@ -1383,8 +1404,8 @@ impl Camera {
     /// camera.set_bit_mode(8).expect("set_bit_mode failed");
     /// ```
     pub fn set_bit_mode(&self, mode: u32) -> Result<()> {
-        match unsafe { libqhyccd_sys::SetQHYCCDBitsMode(self.handle, mode) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { SetQHYCCDBitsMode(self.handle, mode) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::SetBitModeError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -1405,8 +1426,8 @@ impl Camera {
     /// };
     /// ```
     pub fn get_parameter(&self, control: Control) -> Result<f64> {
-        let res = unsafe { libqhyccd_sys::GetQHYCCDParam(self.handle, control as u32) };
-        if (res - libqhyccd_sys::QHYCCD_ERROR_F64).abs() < f64::EPSILON {
+        let res = unsafe { GetQHYCCDParam(self.handle, control as u32) };
+        if (res - QHYCCD_ERROR_F64).abs() < f64::EPSILON {
             let error = QHYError::GetParameterError { control };
             tracing::error!(error = error.to_string().as_str());
             Err(eyre!(error))
@@ -1424,8 +1445,8 @@ impl Camera {
     /// camera.set_parameter(Control::Exposure, 2000000.0).expect("set_parameter failed");
     /// ```
     pub fn set_parameter(&self, control: Control, value: f64) -> Result<()> {
-        match unsafe { libqhyccd_sys::SetQHYCCDParam(self.handle, control as u32, value) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { SetQHYCCDParam(self.handle, control as u32, value) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::SetParameterError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -1463,8 +1484,8 @@ impl Camera {
     /// });
     /// ```
     pub fn is_cfw_plugged_in(&self) -> Result<bool> {
-        match unsafe { libqhyccd_sys::IsQHYCCDCFWPlugged(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(true),
+        match unsafe { IsQHYCCDCFWPlugged(self.handle) } {
+            QHYCCD_SUCCESS => Ok(true),
             _ => {
                 let error = QHYError::IsCfwPluggedInError;
                 tracing::error!(error = error.to_string().as_str());
@@ -1486,7 +1507,7 @@ impl Camera {
         unsafe {
             match std::ffi::CString::new(self.id.clone()) {
                 Ok(c_id) => {
-                    let handle = libqhyccd_sys::OpenQHYCCD(c_id.as_ptr());
+                    let handle = OpenQHYCCD(c_id.as_ptr());
                     if handle.is_null() {
                         let error = QHYError::OpenCameraError;
                         tracing::error!(error = error.to_string().as_str());
@@ -1513,8 +1534,8 @@ impl Camera {
     /// camera.close().expect("close failed");
     /// ```
     pub fn close(&self) -> Result<()> {
-        match unsafe { libqhyccd_sys::CloseQHYCCD(self.handle) } {
-            libqhyccd_sys::QHYCCD_SUCCESS => Ok(()),
+        match unsafe { CloseQHYCCD(self.handle) } {
+            QHYCCD_SUCCESS => Ok(()),
             error_code => {
                 let error = QHYError::CloseCameraError { error_code };
                 tracing::error!(error = error.to_string().as_str());
@@ -1542,22 +1563,60 @@ impl FilterWheel for Camera {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::mocks::mock_libqhyccd_sys::{
+        GetQHYCCDId_context, InitQHYCCDResource_context, IsQHYCCDCFWPlugged_context,
+        OpenQHYCCD_context, ReleaseQHYCCDResource_context, ScanQHYCCD_context,
+    };
 
     #[test]
-    fn test() {
-        let sdk = Sdk::new().unwrap();
-        assert_eq!(
-            sdk.version().unwrap(),
-            SDKVersion {
-                year: 23,
-                month: 9,
-                day: 6,
-                subday: 14
+    fn sdk_new() {
+        let ctx1 = InitQHYCCDResource_context();
+        ctx1.expect().times(1).return_const(QHYCCD_SUCCESS);
+        let ctx2 = ScanQHYCCD_context();
+        ctx2.expect().times(1).return_const(2_u32);
+        let ctx3 = GetQHYCCDId_context();
+        ctx3.expect()
+            .times(2)
+            .returning_st(|index, c_id| match index {
+                0 => unsafe {
+                    let cam_id = "QHY178M-222b16468c5966524\0";
+                    c_id.copy_from(cam_id.as_ptr(), cam_id.len());
+
+                    QHYCCD_SUCCESS
+                },
+                1 => unsafe {
+                    let cam_id = "QHY178M-222b16468c5966525\0";
+                    c_id.copy_from(cam_id.as_ptr(), cam_id.len());
+                    QHYCCD_SUCCESS
+                },
+                _ => panic!("too many calls"),
+            });
+        const ADDR1: *const core::ffi::c_void = 0xdeadbeef as *mut std::ffi::c_void;
+        const ADDR2: *const core::ffi::c_void = 0xdeadbeea as *mut std::ffi::c_void;
+        let ctx4 = OpenQHYCCD_context();
+        ctx4.expect().times(2).returning_st(|c_id| {
+            match unsafe { CStr::from_ptr(c_id) }.to_str() {
+                Ok(id) => match id {
+                    "QHY178M-222b16468c5966524" => ADDR1,
+                    "QHY178M-222b16468c5966525" => ADDR2,
+                    _ => panic!("invalid id"),
+                },
+                Err(_) => panic!("invalid id"),
             }
-        );
-        assert_eq!(sdk.cameras().count(), 0);
-        assert_eq!(sdk.filter_wheels().count(), 0);
-        assert!(sdk.filter_wheels().last().is_none());
-        assert!(sdk.cameras().last().is_none());
+        });
+        let ctx5 = IsQHYCCDCFWPlugged_context();
+        ctx5.expect().times(4).returning_st(|handle| match handle {
+            ADDR1 => QHYCCD_SUCCESS,
+            ADDR2 => QHYCCD_ERROR,
+            _ => panic!("invalid handle"),
+        });
+
+        let ctx6 = ReleaseQHYCCDResource_context();
+        ctx6.expect().times(1).return_const(QHYCCD_SUCCESS);
+        let sdk = Sdk::new().unwrap();
+        assert_eq!(sdk.cameras().count(), 2);
+        assert_eq!(sdk.filter_wheels().count(), 1);
+        assert!(sdk.filter_wheels().last().is_some());
+        assert!(sdk.cameras().last().is_some());
     }
 }
