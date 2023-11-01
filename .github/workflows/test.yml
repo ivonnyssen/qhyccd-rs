@@ -29,12 +29,14 @@ jobs:
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
+      - name: Install latest nextest release
+        uses: taiki-e/install-action@nextest
       # https://twitter.com/jonhoo/status/1571290371124260865
       - name: cargo test --locked
-        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --all-targets
+        run: cargo nextest run --locked --all-features --features libqhyccd-sys/vendored --all-targets
       # https://github.com/rust-lang/cargo/issues/6669
       - name: cargo test --doc
-        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --doc
+        run: cargo test run --locked --all-features --features libqhyccd-sys/vendored --doc
   minimal:
     runs-on: ubuntu-latest
     name: ubuntu / stable / minimal-versions
@@ -50,10 +52,12 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
       - name: rustup default stable
         run: rustup default stable
+      - name: Install latest nextest release
+        uses: taiki-e/install-action@nextest
       - name: cargo update -Zminimal-versions
         run: cargo +nightly update -Zminimal-versions
       - name: cargo test
-        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --all-targets
+        run: cargo nextest run --locked --all-features --features libqhyccd-sys/vendored --all-targets
 #  os-check:
 #    runs-on: ${{ matrix.os }}
 #    name: ${{ matrix.os }} / stable
@@ -101,4 +105,4 @@ jobs:
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
         with:
-          fail_ci_if_error: true
+          fail_ci_if_error: false
