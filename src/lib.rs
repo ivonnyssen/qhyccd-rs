@@ -7,7 +7,8 @@ use core::ffi::CStr;
 use eyre::eyre;
 use eyre::Result;
 
-mod mocks;
+#[cfg(test)]
+pub mod mocks;
 
 #[cfg(not(test))]
 use libqhyccd_sys::{
@@ -1486,6 +1487,7 @@ impl Camera {
     pub fn is_cfw_plugged_in(&self) -> Result<bool> {
         match unsafe { IsQHYCCDCFWPlugged(self.handle) } {
             QHYCCD_SUCCESS => Ok(true),
+            QHYCCD_ERROR => Ok(false),
             _ => {
                 let error = QHYError::IsCfwPluggedInError;
                 tracing::error!(error = error.to_string().as_str());
@@ -1561,62 +1563,4 @@ impl FilterWheel for Camera {
 }
 
 #[cfg(test)]
-mod test {
-    use super::*;
-    use crate::mocks::mock_libqhyccd_sys::{
-        GetQHYCCDId_context, InitQHYCCDResource_context, IsQHYCCDCFWPlugged_context,
-        OpenQHYCCD_context, ReleaseQHYCCDResource_context, ScanQHYCCD_context,
-    };
-
-    #[test]
-    fn sdk_new() {
-        let ctx1 = InitQHYCCDResource_context();
-        ctx1.expect().times(1).return_const(QHYCCD_SUCCESS);
-        let ctx2 = ScanQHYCCD_context();
-        ctx2.expect().times(1).return_const(2_u32);
-        let ctx3 = GetQHYCCDId_context();
-        ctx3.expect()
-            .times(2)
-            .returning_st(|index, c_id| match index {
-                0 => unsafe {
-                    let cam_id = "QHY178M-222b16468c5966524\0";
-                    c_id.copy_from(cam_id.as_ptr(), cam_id.len());
-
-                    QHYCCD_SUCCESS
-                },
-                1 => unsafe {
-                    let cam_id = "QHY178M-222b16468c5966525\0";
-                    c_id.copy_from(cam_id.as_ptr(), cam_id.len());
-                    QHYCCD_SUCCESS
-                },
-                _ => panic!("too many calls"),
-            });
-        const ADDR1: *const core::ffi::c_void = 0xdeadbeef as *mut std::ffi::c_void;
-        const ADDR2: *const core::ffi::c_void = 0xdeadbeea as *mut std::ffi::c_void;
-        let ctx4 = OpenQHYCCD_context();
-        ctx4.expect().times(2).returning_st(|c_id| {
-            match unsafe { CStr::from_ptr(c_id) }.to_str() {
-                Ok(id) => match id {
-                    "QHY178M-222b16468c5966524" => ADDR1,
-                    "QHY178M-222b16468c5966525" => ADDR2,
-                    _ => panic!("invalid id"),
-                },
-                Err(_) => panic!("invalid id"),
-            }
-        });
-        let ctx5 = IsQHYCCDCFWPlugged_context();
-        ctx5.expect().times(4).returning_st(|handle| match handle {
-            ADDR1 => QHYCCD_SUCCESS,
-            ADDR2 => QHYCCD_ERROR,
-            _ => panic!("invalid handle"),
-        });
-
-        let ctx6 = ReleaseQHYCCDResource_context();
-        ctx6.expect().times(1).return_const(QHYCCD_SUCCESS);
-        let sdk = Sdk::new().unwrap();
-        assert_eq!(sdk.cameras().count(), 2);
-        assert_eq!(sdk.filter_wheels().count(), 1);
-        assert!(sdk.filter_wheels().last().is_some());
-        assert!(sdk.cameras().last().is_some());
-    }
-}
+mod sdk_tests;

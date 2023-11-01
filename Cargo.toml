@@ -30,9 +30,3 @@ tracing-attributes = "0.1.27"
 
 [dev-dependencies]
 mockall = { version = "0.11.4", features = [] }
-cucumber = "0.20"
-tokio = { version = "1.33.0", features = ["macros", "rt-multi-thread", "time"] }
-
-[[test]]
-name = "cucumber" # this should be the same as the filename of your test target
-harness = false  # allows Cucumber to print output instead of libtest
