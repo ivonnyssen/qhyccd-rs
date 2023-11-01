@@ -182,7 +182,7 @@ fn get_firmware_version_success() {
         .times(1)
         .returning_st(|_handle, version| unsafe {
             let fw_version = b"\x01\x23\0";
-            version.copy_from(fw_version.as_ptr() as *const c_char, fw_version.len());
+            version.copy_from(fw_version.as_ptr(), fw_version.len());
 
             QHYCCD_SUCCESS
         });
@@ -199,7 +199,7 @@ fn get_firmware_version_success() {
         .times(1)
         .returning_st(|_handle, version| unsafe {
             let fw_version = b"\xA1\x11\0";
-            version.copy_from(fw_version.as_ptr() as *const c_char, fw_version.len());
+            version.copy_from(fw_version.as_ptr(), fw_version.len());
 
             QHYCCD_SUCCESS
         });
