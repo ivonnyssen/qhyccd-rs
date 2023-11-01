@@ -10,9 +10,9 @@ use crate::QHYError::{GetCameraIdError, InitSDKError, ScanQHYCCDError};
 #[test]
 fn new_success() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const(2_u32);
+    ctx_scan.expect().times(1).return_const_st(2_u32);
     let ctx_id = GetQHYCCDId_context();
     ctx_id
         .expect()
@@ -58,7 +58,7 @@ fn new_success() {
     ctx_version
         .expect()
         .times(1)
-        .returning(|year, month, day, subday| unsafe {
+        .returning_st(|year, month, day, subday| unsafe {
             *year = 21;
             *month = 1;
             *day = 1;
@@ -66,7 +66,10 @@ fn new_success() {
             QHYCCD_SUCCESS
         });
     let ctx_release = ReleaseQHYCCDResource_context();
-    ctx_release.expect().times(1).return_const(QHYCCD_SUCCESS);
+    ctx_release
+        .expect()
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
     let sdk = Sdk::new().unwrap();
     assert_eq!(sdk.cameras().count(), 2);
     assert_eq!(sdk.filter_wheels().count(), 1);
@@ -86,7 +89,7 @@ fn new_success() {
 #[test]
 fn new_init_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const(QHYCCD_ERROR);
+    ctx_init.expect().times(1).return_const_st(QHYCCD_ERROR);
     let res = Sdk::new();
     assert!(res.is_err());
     assert_eq!(
@@ -101,9 +104,9 @@ fn new_init_fail() {
 #[test]
 fn new_scan_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const(QHYCCD_ERROR);
+    ctx_scan.expect().times(1).return_const_st(QHYCCD_ERROR);
     let res = Sdk::new();
     assert!(res.is_err());
     assert_eq!(res.err().unwrap().to_string(), ScanQHYCCDError.to_string());
@@ -131,9 +134,9 @@ fn new_get_id_fail() {
 #[test]
 fn new_camera_new_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const(1_u32);
+    ctx_scan.expect().times(1).return_const_st(1_u32);
     let ctx_id = GetQHYCCDId_context();
     ctx_id
         .expect()
@@ -153,7 +156,10 @@ fn new_camera_new_fail() {
         .times(1)
         .returning_st(|_c_id| core::ptr::null());
     let ctx_release = ReleaseQHYCCDResource_context();
-    ctx_release.expect().times(1).return_const(QHYCCD_SUCCESS);
+    ctx_release
+        .expect()
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
     let res = Sdk::new();
     assert!(res.is_ok());
     assert_eq!(res.unwrap().cameras().count(), 0);
@@ -162,9 +168,9 @@ fn new_camera_new_fail() {
 #[test]
 fn new_is_plugged_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const(1_u32);
+    ctx_scan.expect().times(1).return_const_st(1_u32);
     let ctx_id = GetQHYCCDId_context();
     ctx_id
         .expect()
