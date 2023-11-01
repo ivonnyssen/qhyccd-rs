@@ -33,7 +33,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: nextest
-          args: run --locked --all-features --all-targets --profile ci
+          args: run --locked --all-features --all-targets
       #- name: cargo test --locked
       #  run: cargo test --locked --all-features --all-targets
   # https://twitter.com/alcuadrado/status/1571291687837732873
