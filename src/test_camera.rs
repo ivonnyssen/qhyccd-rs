@@ -1,11 +1,18 @@
 use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
-    GetQHYCCDId_context, GetQHYCCDSDKVersion_context, InitQHYCCDResource_context,
-    IsQHYCCDCFWPlugged_context, OpenQHYCCD_context, ReleaseQHYCCDResource_context,
-    ScanQHYCCD_context, QHYCCD_SUCCESS,
+    OpenQHYCCD_context, SetQHYCCDReadMode_context, SetQHYCCDStreamMode_context, QHYCCD_SUCCESS,
 };
 
-use crate::QHYError::{GetCameraIdError, InitSDKError, ScanQHYCCDError};
+use crate::QHYError::{SetReadoutModeError, SetStreamModeError};
+
+fn new_camera() -> Camera {
+    let ctx_open = OpenQHYCCD_context();
+    ctx_open
+        .expect()
+        .times(1)
+        .return_const_st(0xdeadbeef as *const std::ffi::c_void);
+    Camera::new("test_camera".to_owned()).unwrap()
+}
 
 #[test]
 fn new_fail_null_error() {
@@ -15,4 +22,72 @@ fn new_fail_null_error() {
     let res = Camera::new(s);
     //then
     assert!(res.is_err());
+}
+
+#[test]
+fn set_stream_mode_success() {
+    //given
+    let ctx = SetQHYCCDStreamMode_context();
+    ctx.expect()
+        .withf_st(|_, mode| *mode == StreamMode::LiveMode as u8)
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+    let cam = new_camera();
+    //when
+    let res = cam.set_stream_mode(StreamMode::LiveMode);
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn set_stream_mode_fail() {
+    //given
+    let ctx = SetQHYCCDStreamMode_context();
+    ctx.expect().times(1).return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.set_stream_mode(StreamMode::LiveMode);
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        SetStreamModeError {
+            error_code: QHYCCD_ERROR
+        }
+        .to_string()
+    );
+}
+
+#[test]
+fn set_readout_mode_success() {
+    //given
+    let ctx = SetQHYCCDReadMode_context();
+    ctx.expect()
+        .withf_st(|_, mode| *mode == 1_u32)
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+    let cam = new_camera();
+    //when
+    let res = cam.set_readout_mode(1_u32);
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn set_readout_mode_fail() {
+    //given
+    let ctx = SetQHYCCDReadMode_context();
+    ctx.expect().times(1).return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.set_readout_mode(1_u32);
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        SetReadoutModeError {
+            error_code: QHYCCD_ERROR
+        }
+        .to_string()
+    );
 }
