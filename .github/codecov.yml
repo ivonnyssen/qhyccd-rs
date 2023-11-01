@@ -16,6 +16,7 @@ ignore:
   - "tests"
   - "**/test_*.rs"
   - "src/bin"
+  - "**/mocks.rs"
 
 # Make comments less noisy
 comment:
