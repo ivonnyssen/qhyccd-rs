@@ -14,6 +14,7 @@ coverage:
 # Test files aren't important for coverage
 ignore:
   - "tests"
+  - "test_*.rs"
 
 # Make comments less noisy
 comment:

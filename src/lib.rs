@@ -1563,4 +1563,4 @@ impl FilterWheel for Camera {
 }
 
 #[cfg(test)]
-mod sdk_tests;
+mod test_sdk;

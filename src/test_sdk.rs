@@ -147,6 +147,33 @@ fn new_get_id_fail() {
         .to_string()
     );
 }
+#[test]
+fn new_get_id_invalid_utf8_fail() {
+    //given
+    let ctx_init = InitQHYCCDResource_context();
+    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    let ctx_scan = ScanQHYCCD_context();
+    ctx_scan.expect().times(1).return_const_st(1_u32);
+    let ctx_id = GetQHYCCDId_context();
+    ctx_id
+        .expect()
+        .times(1)
+        .returning_st(|index, c_id| match index {
+            0 => unsafe {
+                let cam_id = b"\xc3\x28\0";
+                c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
+
+                QHYCCD_SUCCESS
+            },
+            _ => panic!("too many calls"),
+        });
+    let ctx_release = ReleaseQHYCCDResource_context();
+    ctx_release.expect().return_const_st(QHYCCD_SUCCESS);
+    //when
+    let res = Sdk::new();
+    //then
+    assert!(res.is_err());
+}
 
 #[test]
 fn new_camera_new_fail() {
@@ -231,4 +258,26 @@ fn new_is_plugged_fail() {
     //then
     assert_eq!(res.cameras().count(), 1);
     assert_eq!(res.filter_wheels().count(), 0);
+}
+
+#[test]
+fn new_version_fail() {
+    //given
+    let ctx_init = InitQHYCCDResource_context();
+    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    let ctx_scan = ScanQHYCCD_context();
+    ctx_scan.expect().times(1).return_const_st(0_u32);
+    let ctx_version = GetQHYCCDSDKVersion_context();
+    ctx_version.expect().times(1).return_const_st(QHYCCD_ERROR);
+    let ctx_release = ReleaseQHYCCDResource_context();
+    ctx_release
+        .expect()
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+    //when
+    let res = Sdk::new().unwrap();
+    //then
+    assert_eq!(res.cameras().count(), 0);
+    assert_eq!(res.filter_wheels().count(), 0);
+    assert!(res.version().is_err());
 }
