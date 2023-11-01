@@ -747,7 +747,7 @@ impl Camera {
         }
     }
 
-    /// retunrs the firmware version of the camera
+    /// returns the firmware version of the camera
     /// # Example
     /// ```no_run
     /// use qhyccd_rs::Sdk;

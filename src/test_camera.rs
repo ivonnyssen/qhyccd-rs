@@ -1,6 +1,7 @@
 use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
-    OpenQHYCCD_context, SetQHYCCDReadMode_context, SetQHYCCDStreamMode_context, QHYCCD_SUCCESS,
+    GetQHYCCDModel_context, OpenQHYCCD_context, SetQHYCCDReadMode_context,
+    SetQHYCCDStreamMode_context, QHYCCD_SUCCESS,
 };
 
 use crate::QHYError::{SetReadoutModeError, SetStreamModeError};
@@ -90,4 +91,51 @@ fn set_readout_mode_fail() {
         }
         .to_string()
     );
+}
+
+#[test]
+fn get_model_success() {
+    //given
+    let ctx = GetQHYCCDModel_context();
+    ctx.expect().times(1).returning_st(|_handle, model| unsafe {
+        let cam_model = "QHY178M\0";
+        model.copy_from(cam_model.as_ptr() as *const c_char, cam_model.len());
+
+        QHYCCD_SUCCESS
+    });
+    let cam = new_camera();
+    //when
+    let res = cam.get_model();
+    //then
+    assert!(res.is_ok());
+    assert_eq!(res.unwrap(), "QHY178M");
+}
+
+#[test]
+fn get_model_fail() {
+    //given
+    let ctx = GetQHYCCDModel_context();
+    ctx.expect().times(1).return_const(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.get_model();
+    //then
+    assert!(res.is_err());
+}
+
+#[test]
+fn get_model_utf8_error() {
+    //given
+    let ctx = GetQHYCCDModel_context();
+    ctx.expect().times(1).returning_st(|_handle, model| unsafe {
+        let cam_model = b"\xc3\x28\0";
+        model.copy_from(cam_model.as_ptr() as *const c_char, cam_model.len());
+
+        QHYCCD_SUCCESS
+    });
+    let cam = new_camera();
+    //when
+    let res = cam.get_model();
+    //then
+    assert!(res.is_err());
 }
