@@ -20,13 +20,13 @@ fn new_success() {
         .returning_st(|index, c_id| match index {
             0 => unsafe {
                 let cam_id = "QHY178M-222b16468c5966524\0";
-                c_id.copy_from(cam_id.as_ptr(), cam_id.len());
+                c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
 
                 QHYCCD_SUCCESS
             },
             1 => unsafe {
                 let cam_id = "QHY178M-222b16468c5966525\0";
-                c_id.copy_from(cam_id.as_ptr(), cam_id.len());
+                c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
                 QHYCCD_SUCCESS
             },
             _ => panic!("too many calls"),
@@ -141,7 +141,7 @@ fn new_camera_new_fail() {
         .returning_st(|index, c_id| match index {
             0 => unsafe {
                 let cam_id = "QHY178M-222b16468c5966524\0";
-                c_id.copy_from(cam_id.as_ptr(), cam_id.len());
+                c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
 
                 QHYCCD_SUCCESS
             },
@@ -172,7 +172,7 @@ fn new_is_plugged_fail() {
         .returning_st(|index, c_id| match index {
             0 => unsafe {
                 let cam_id = "QHY178M-222b16468c5966524\0";
-                c_id.copy_from(cam_id.as_ptr(), cam_id.len());
+                c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
 
                 QHYCCD_SUCCESS
             },
