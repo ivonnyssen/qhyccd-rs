@@ -10,14 +10,14 @@ use crate::QHYError::{GetCameraIdError, InitSDKError, ScanQHYCCDError};
 #[test]
 fn new_success() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const_st(2_u32);
+    ctx_scan.expect().times(1).return_const(2_u32);
     let ctx_id = GetQHYCCDId_context();
     ctx_id
         .expect()
         .times(2)
-        .returning_st(|index, c_id| match index {
+        .returning(|index, c_id| match index {
             0 => unsafe {
                 let cam_id = "QHY178M-222b16468c5966524\0";
                 c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
@@ -34,21 +34,22 @@ fn new_success() {
     const ADDR1: *const core::ffi::c_void = 0xdeadbeef as *mut std::ffi::c_void;
     const ADDR2: *const core::ffi::c_void = 0xdeadbeea as *mut std::ffi::c_void;
     let ctx_open = OpenQHYCCD_context();
-    ctx_open.expect().times(2).returning_st(|c_id| {
-        match unsafe { CStr::from_ptr(c_id) }.to_str() {
+    ctx_open
+        .expect()
+        .times(2)
+        .returning(|c_id| match unsafe { CStr::from_ptr(c_id) }.to_str() {
             Ok(id) => match id {
                 "QHY178M-222b16468c5966524" => ADDR1,
                 "QHY178M-222b16468c5966525" => ADDR2,
                 _ => panic!("invalid id"),
             },
             Err(_) => panic!("invalid id"),
-        }
-    });
+        });
     let ctx_plugged = IsQHYCCDCFWPlugged_context();
     ctx_plugged
         .expect()
         .times(4)
-        .returning_st(|handle| match handle {
+        .returning(|handle| match handle {
             ADDR1 => QHYCCD_SUCCESS,
             ADDR2 => QHYCCD_ERROR,
             _ => panic!("invalid handle"),
@@ -58,7 +59,7 @@ fn new_success() {
     ctx_version
         .expect()
         .times(1)
-        .returning_st(|year, month, day, subday| unsafe {
+        .returning(|year, month, day, subday| unsafe {
             *year = 21;
             *month = 1;
             *day = 1;
@@ -66,10 +67,7 @@ fn new_success() {
             QHYCCD_SUCCESS
         });
     let ctx_release = ReleaseQHYCCDResource_context();
-    ctx_release
-        .expect()
-        .times(1)
-        .return_const_st(QHYCCD_SUCCESS);
+    ctx_release.expect().times(1).return_const(QHYCCD_SUCCESS);
     let sdk = Sdk::new().unwrap();
     assert_eq!(sdk.cameras().count(), 2);
     assert_eq!(sdk.filter_wheels().count(), 1);
@@ -89,7 +87,7 @@ fn new_success() {
 #[test]
 fn new_init_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const_st(QHYCCD_ERROR);
+    ctx_init.expect().times(1).return_const(QHYCCD_ERROR);
     let res = Sdk::new();
     assert!(res.is_err());
     assert_eq!(
@@ -104,9 +102,9 @@ fn new_init_fail() {
 #[test]
 fn new_scan_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const_st(QHYCCD_ERROR);
+    ctx_scan.expect().times(1).return_const(QHYCCD_ERROR);
     let res = Sdk::new();
     assert!(res.is_err());
     assert_eq!(res.err().unwrap().to_string(), ScanQHYCCDError.to_string());
@@ -134,14 +132,14 @@ fn new_get_id_fail() {
 #[test]
 fn new_camera_new_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const_st(1_u32);
+    ctx_scan.expect().times(1).return_const(1_u32);
     let ctx_id = GetQHYCCDId_context();
     ctx_id
         .expect()
         .times(1)
-        .returning_st(|index, c_id| match index {
+        .returning(|index, c_id| match index {
             0 => unsafe {
                 let cam_id = "QHY178M-222b16468c5966524\0";
                 c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
@@ -154,12 +152,9 @@ fn new_camera_new_fail() {
     ctx_open
         .expect()
         .times(1)
-        .returning_st(|_c_id| core::ptr::null());
+        .returning(|_c_id| core::ptr::null());
     let ctx_release = ReleaseQHYCCDResource_context();
-    ctx_release
-        .expect()
-        .times(1)
-        .return_const_st(QHYCCD_SUCCESS);
+    ctx_release.expect().times(1).return_const(QHYCCD_SUCCESS);
     let res = Sdk::new();
     assert!(res.is_ok());
     assert_eq!(res.unwrap().cameras().count(), 0);
@@ -168,14 +163,14 @@ fn new_camera_new_fail() {
 #[test]
 fn new_is_plugged_fail() {
     let ctx_init = InitQHYCCDResource_context();
-    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    ctx_init.expect().times(1).return_const(QHYCCD_SUCCESS);
     let ctx_scan = ScanQHYCCD_context();
-    ctx_scan.expect().times(1).return_const_st(1_u32);
+    ctx_scan.expect().times(1).return_const(1_u32);
     let ctx_id = GetQHYCCDId_context();
     ctx_id
         .expect()
         .times(1)
-        .returning_st(|index, c_id| match index {
+        .returning(|index, c_id| match index {
             0 => unsafe {
                 let cam_id = "QHY178M-222b16468c5966524\0";
                 c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
@@ -186,20 +181,21 @@ fn new_is_plugged_fail() {
         });
     const ADDR1: *const core::ffi::c_void = 0xdeadbeef as *mut std::ffi::c_void;
     let ctx_open = OpenQHYCCD_context();
-    ctx_open.expect().times(1).returning_st(|c_id| {
-        match unsafe { CStr::from_ptr(c_id) }.to_str() {
+    ctx_open
+        .expect()
+        .times(1)
+        .returning(|c_id| match unsafe { CStr::from_ptr(c_id) }.to_str() {
             Ok(id) => match id {
                 "QHY178M-222b16468c5966524" => ADDR1,
                 _ => panic!("invalid id"),
             },
             Err(_) => panic!("invalid id"),
-        }
-    });
+        });
     let ctx_plugged = IsQHYCCDCFWPlugged_context();
     ctx_plugged
         .expect()
         .times(1)
-        .returning_st(|handle| match handle {
+        .returning(|handle| match handle {
             ADDR1 => 12345,
             _ => panic!("invalid handle"),
         });
