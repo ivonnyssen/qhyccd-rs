@@ -747,7 +747,7 @@ impl Camera {
         }
     }
 
-    /// retunrs the firmware version of the camera
+    /// returns the firmware version of the camera
     /// # Example
     /// ```no_run
     /// use qhyccd_rs::Sdk;
@@ -1563,4 +1563,6 @@ impl FilterWheel for Camera {
 }
 
 #[cfg(test)]
-mod sdk_tests;
+mod test_camera;
+#[cfg(test)]
+mod test_sdk;
