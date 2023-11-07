@@ -281,3 +281,63 @@ fn new_version_fail() {
     assert_eq!(res.filter_wheels().count(), 0);
     assert!(res.version().is_err());
 }
+
+#[test]
+fn add_camera_success() {
+    //given
+    let ctx_init = InitQHYCCDResource_context();
+    ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    let ctx_scan = ScanQHYCCD_context();
+    ctx_scan.expect().times(1).return_const_st(1_u32);
+    let ctx_id = GetQHYCCDId_context();
+    ctx_id
+        .expect()
+        .times(1)
+        .returning_st(|index, c_id| match index {
+            0 => unsafe {
+                let cam_id = "QHY178M-222b16468c5966524\0";
+                c_id.copy_from(cam_id.as_ptr() as *const c_char, cam_id.len());
+
+                QHYCCD_SUCCESS
+            },
+            _ => panic!("too many calls"),
+        });
+    const ADDR1: *const core::ffi::c_void = 0xdeadbeef as *mut std::ffi::c_void;
+    const TEST_HANDLE: *const core::ffi::c_void = 0xdeadbeea as *mut std::ffi::c_void;
+    let ctx_open = OpenQHYCCD_context();
+    ctx_open.expect().times(1).returning_st(|c_id| {
+        match unsafe { CStr::from_ptr(c_id) }.to_str() {
+            Ok(id) => match id {
+                "QHY178M-222b16468c5966524" => ADDR1,
+                _ => panic!("invalid id"),
+            },
+            Err(_) => panic!("invalid id"),
+        }
+    });
+    let ctx_plugged = IsQHYCCDCFWPlugged_context();
+    ctx_plugged
+        .expect()
+        .times(4)
+        .returning_st(|handle| match handle {
+            ADDR1 => QHYCCD_SUCCESS,
+            TEST_HANDLE => QHYCCD_ERROR,
+            _ => panic!("invalid handle"),
+        });
+    let ctx_release = ReleaseQHYCCDResource_context();
+    ctx_release
+        .expect()
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+    let mut sdk = Sdk::new().unwrap();
+
+    let ctx_open = OpenQHYCCD_context();
+    ctx_open.expect().times(1).return_const_st(TEST_HANDLE);
+    let camera = Camera::new("test_camera".to_owned());
+    //when
+    sdk.add_camera(camera.unwrap());
+    //then
+    assert_eq!(sdk.cameras().count(), 2);
+    assert_eq!(sdk.filter_wheels().count(), 1);
+    assert!(sdk.filter_wheels().last().is_some());
+    assert!(sdk.cameras().last().is_some());
+}
