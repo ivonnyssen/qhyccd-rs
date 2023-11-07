@@ -52,7 +52,7 @@ pub enum QHYError {
     GetSDKVersionError { error_code: u32 },
     #[error("Error scanning QHYCCD cameras")]
     ScanQHYCCDError,
-    #[error("Error opening camera, error code")]
+    #[error("Error opening camera")]
     OpenCameraError,
     #[error("Error camera id, error code {:?}", error_code)]
     GetCameraIdError { error_code: u32 },
@@ -627,23 +627,7 @@ impl Camera {
     /// println!("Camera: {:?}", camera);
     /// ```
     pub fn new(id: String) -> Result<Self> {
-        unsafe {
-            match std::ffi::CString::new(id.clone()) {
-                Ok(c_id) => {
-                    let handle = OpenQHYCCD(c_id.as_ptr());
-                    if handle.is_null() {
-                        let error = QHYError::OpenCameraError;
-                        tracing::error!(error = error.to_string().as_str());
-                        return Err(eyre!(error));
-                    }
-                    Ok(Camera { id, handle })
-                }
-                Err(error) => {
-                    tracing::error!(error = error.to_string().as_str());
-                    Err(eyre!(error))
-                }
-            }
-        }
+        unsafe { open_camera(id) }
     }
 
     /// Returns the id of the camera
@@ -1507,22 +1491,9 @@ impl Camera {
     /// ```
     pub fn open(&mut self) -> Result<()> {
         unsafe {
-            match std::ffi::CString::new(self.id.clone()) {
-                Ok(c_id) => {
-                    let handle = OpenQHYCCD(c_id.as_ptr());
-                    if handle.is_null() {
-                        let error = QHYError::OpenCameraError;
-                        tracing::error!(error = error.to_string().as_str());
-                        return Err(eyre!(error));
-                    }
-                    self.handle = handle;
-                    Ok(())
-                }
-                Err(error) => {
-                    tracing::error!(error = error.to_string().as_str());
-                    Err(eyre!(error))
-                }
-            }
+            let res = open_camera(self.id.clone())?;
+            self.handle = res.handle;
+            Ok(())
         }
     }
 
@@ -1543,6 +1514,24 @@ impl Camera {
                 tracing::error!(error = error.to_string().as_str());
                 Err(eyre!(error))
             }
+        }
+    }
+}
+
+unsafe fn open_camera(id: String) -> std::result::Result<Camera, eyre::Error> {
+    match std::ffi::CString::new(id.clone()) {
+        Ok(c_id) => {
+            let handle = OpenQHYCCD(c_id.as_ptr());
+            if handle.is_null() {
+                let error = QHYError::OpenCameraError;
+                tracing::error!(error = error.to_string().as_str());
+                return Err(eyre!(error));
+            }
+            Ok(Camera { id, handle })
+        }
+        Err(error) => {
+            tracing::error!(error = error.to_string().as_str());
+            Err(eyre!(error))
         }
     }
 }

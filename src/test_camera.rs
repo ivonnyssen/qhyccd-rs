@@ -1,15 +1,16 @@
 use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
     BeginQHYCCDLive_context, CancelQHYCCDExposingAndReadout_context, CancelQHYCCDExposing_context,
-    ExpQHYCCDSingleFrame_context, GetQHYCCDChipInfo_context, GetQHYCCDEffectiveArea_context,
-    GetQHYCCDExposureRemaining_context, GetQHYCCDFWVersion_context, GetQHYCCDLiveFrame_context,
-    GetQHYCCDMemLength_context, GetQHYCCDModel_context, GetQHYCCDNumberOfReadModes_context,
-    GetQHYCCDOverScanArea_context, GetQHYCCDParam_context, GetQHYCCDReadModeName_context,
-    GetQHYCCDReadModeResolution_context, GetQHYCCDReadMode_context, GetQHYCCDSingleFrame_context,
-    GetQHYCCDType_context, InitQHYCCD_context, IsQHYCCDControlAvailable_context,
-    OpenQHYCCD_context, SetQHYCCDBinMode_context, SetQHYCCDBitsMode_context,
-    SetQHYCCDDebayerOnOff_context, SetQHYCCDReadMode_context, SetQHYCCDResolution_context,
-    SetQHYCCDStreamMode_context, StopQHYCCDLive_context, QHYCCD_SUCCESS,
+    CloseQHYCCD_context, ExpQHYCCDSingleFrame_context, GetQHYCCDChipInfo_context,
+    GetQHYCCDEffectiveArea_context, GetQHYCCDExposureRemaining_context, GetQHYCCDFWVersion_context,
+    GetQHYCCDLiveFrame_context, GetQHYCCDMemLength_context, GetQHYCCDModel_context,
+    GetQHYCCDNumberOfReadModes_context, GetQHYCCDOverScanArea_context, GetQHYCCDParam_context,
+    GetQHYCCDReadModeName_context, GetQHYCCDReadModeResolution_context, GetQHYCCDReadMode_context,
+    GetQHYCCDSingleFrame_context, GetQHYCCDType_context, InitQHYCCD_context,
+    IsQHYCCDControlAvailable_context, OpenQHYCCD_context, SetQHYCCDBinMode_context,
+    SetQHYCCDBitsMode_context, SetQHYCCDDebayerOnOff_context, SetQHYCCDParam_context,
+    SetQHYCCDReadMode_context, SetQHYCCDResolution_context, SetQHYCCDStreamMode_context,
+    StopQHYCCDLive_context, QHYCCD_SUCCESS,
 };
 
 const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_void;
@@ -1259,4 +1260,255 @@ fn get_parameter_fail() {
         }
         .to_string()
     );
+}
+
+#[test]
+fn set_parameter_success() {
+    //given
+    let ctx = SetQHYCCDParam_context();
+    ctx.expect()
+        .withf_st(|handle, control, value| {
+            *handle == TEST_HANDLE && *control == Control::TransferBit as u32 && *value == 16.0
+        })
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+    let cam = new_camera();
+    //when
+    let res = cam.set_parameter(Control::TransferBit, 16.0);
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn set_parameter_fail() {
+    //given
+    let ctx = SetQHYCCDParam_context();
+    ctx.expect()
+        .withf_st(|handle, control, value| {
+            *handle == TEST_HANDLE && *control == Control::TransferBit as u32 && *value == 16.0
+        })
+        .times(1)
+        .return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.set_parameter(Control::TransferBit, 16.0);
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        QHYError::SetParameterError {
+            error_code: QHYCCD_ERROR
+        }
+        .to_string()
+    );
+}
+
+#[test]
+fn set_if_available_success() {
+    //given
+    let ctx_get = IsQHYCCDControlAvailable_context();
+    ctx_get
+        .expect()
+        .withf_st(|handle, control| {
+            *handle == TEST_HANDLE && *control == Control::TransferBit as u32
+        })
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+
+    let ctx_set = SetQHYCCDParam_context();
+    ctx_set
+        .expect()
+        .withf_st(|handle, control, value| {
+            *handle == TEST_HANDLE && *control == Control::TransferBit as u32 && *value == 16.0
+        })
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+    let cam = new_camera();
+    //when
+    let res = cam.set_if_available(Control::TransferBit, 16.0);
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn set_if_available_fail() {
+    //given
+    let ctx_get = IsQHYCCDControlAvailable_context();
+    ctx_get
+        .expect()
+        .withf_st(|handle, control| {
+            *handle == TEST_HANDLE && *control == Control::TransferBit as u32
+        })
+        .times(1)
+        .return_const_st(QHYCCD_ERROR);
+
+    /*     let ctx_set = SetQHYCCDParam_context();
+       ctx_set
+           .expect()
+           .withf_st(|handle, control, value| {
+               *handle == TEST_HANDLE && *control == Control::TransferBit as u32 && *value == 16.0
+           })
+           .times(1)
+           .return_const_st(QHYCCD_ERROR);
+    */
+    let cam = new_camera();
+    //when
+    let res = cam.set_if_available(Control::TransferBit, 16.0);
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        QHYError::IsFeatureSupportedError {
+            feature: Control::TransferBit
+        }
+        .to_string()
+    );
+
+    //given
+    let ctx_get = IsQHYCCDControlAvailable_context();
+    ctx_get
+        .expect()
+        .withf_st(|handle, control| {
+            *handle == TEST_HANDLE && *control == Control::TransferBit as u32
+        })
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+
+    let ctx_set = SetQHYCCDParam_context();
+    ctx_set
+        .expect()
+        .withf_st(|handle, control, value| {
+            *handle == TEST_HANDLE && *control == Control::TransferBit as u32 && *value == 16.0
+        })
+        .times(1)
+        .return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.set_if_available(Control::TransferBit, 16.0);
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        QHYError::SetParameterError {
+            error_code: QHYCCD_ERROR
+        }
+        .to_string()
+    );
+}
+
+#[test]
+fn open_success() {
+    //given
+    let mut cam = new_camera();
+    let ctx = OpenQHYCCD_context();
+    ctx.expect().times(1).return_const_st(TEST_HANDLE);
+    //when
+    let res = cam.open();
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn open_fail() {
+    //given
+    let mut cam = new_camera();
+    let ctx = OpenQHYCCD_context();
+    ctx.expect().times(1).return_const_st(core::ptr::null());
+    //when
+    let res = cam.open();
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        QHYError::OpenCameraError.to_string()
+    );
+}
+
+#[test]
+fn close_success() {
+    //given
+    let ctx = CloseQHYCCD_context();
+    ctx.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    let cam = new_camera();
+    //when
+    let res = cam.close();
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn close_fail() {
+    //given
+    let ctx = CloseQHYCCD_context();
+    ctx.expect().times(1).return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.close();
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        QHYError::CloseCameraError {
+            error_code: QHYCCD_ERROR
+        }
+        .to_string()
+    );
+}
+
+#[test]
+fn filter_wheel() {
+    //given
+    let ctx_available = IsQHYCCDControlAvailable_context();
+    ctx_available
+        .expect()
+        .withf_st(|handle, control| {
+            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
+        })
+        .times(1)
+        .return_const_st(QHYCCD_SUCCESS);
+    let ctx_num = GetQHYCCDParam_context();
+    ctx_num
+        .expect()
+        .withf_st(|handle, control| {
+            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
+        })
+        .times(1)
+        .return_const_st(7.0);
+
+    let cam = new_camera();
+    //when
+    let res = cam.positions();
+    //then
+    assert_eq!(res, 7);
+
+    //given
+    let ctx_available = IsQHYCCDControlAvailable_context();
+    ctx_available
+        .expect()
+        .withf_st(|handle, control| {
+            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
+        })
+        .times(1)
+        .return_const_st(QHYCCD_ERROR);
+
+    let cam = new_camera();
+    //when
+    let res = cam.positions();
+    //then
+    assert_eq!(res, 0);
+
+    //given
+    let ctx_available = IsQHYCCDControlAvailable_context();
+    ctx_available
+        .expect()
+        .withf_st(|handle, control| {
+            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
+        })
+        .times(1)
+        .return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.positions();
+    //then
+    assert_eq!(res, 0);
 }
