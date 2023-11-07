@@ -452,7 +452,7 @@ pub struct SDKVersion {
 }
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
-/// The representation of the SDK. It automatically allocates teh SDK when constructed
+/// The representation of the SDK. It automatically allocates the SDK when constructed
 /// and automatically frees resource when deconstructed.
 ///
 /// # Example
@@ -591,6 +591,19 @@ impl Sdk {
                 Err(eyre!(error))
             }
         }
+    }
+
+    /// Adds a manually created camera to the camera iterator of the SDK
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk, Camera};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let camera = Camera::new("test".to_string()).expect("Camera::new failed");
+    /// sdk.add_camera(camera);
+    /// println!("{} cameras connected.", sdk.cameras().count());
+    /// ```
+    pub fn add_camera(&mut self, camera: Camera) {
+        self.cameras.push(camera);
     }
 }
 
