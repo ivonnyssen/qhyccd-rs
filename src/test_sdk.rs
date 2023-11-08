@@ -334,7 +334,7 @@ fn add_camera_success() {
     ctx_open.expect().times(1).return_const_st(TEST_HANDLE);
     let camera = Camera::new("test_camera".to_owned());
     //when
-    sdk.add_camera(camera.unwrap());
+    sdk.add_camera(camera);
     //then
     assert_eq!(sdk.cameras().count(), 2);
     assert_eq!(sdk.filter_wheels().count(), 1);
