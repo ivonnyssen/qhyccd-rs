@@ -18,7 +18,7 @@ const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_vo
 fn new_camera() -> Camera {
     let ctx_open = OpenQHYCCD_context();
     ctx_open.expect().times(1).return_const_st(TEST_HANDLE);
-    let mut camera = Camera::new("test_camera".to_owned());
+    let camera = Camera::new("test_camera".to_owned());
     camera.open().unwrap();
     camera
 }
@@ -1391,7 +1391,7 @@ fn set_if_available_fail() {
 #[test]
 fn open_success() {
     //given
-    let mut cam = Camera::new("test_camera".to_owned());
+    let cam = Camera::new("test_camera".to_owned());
     let ctx_open = OpenQHYCCD_context();
     ctx_open.expect().times(1).return_const_st(TEST_HANDLE);
     //when
@@ -1403,7 +1403,7 @@ fn open_success() {
 #[test]
 fn open_already_open() {
     //given
-    let mut cam = Camera::new("test_camera".to_owned());
+    let cam = Camera::new("test_camera".to_owned());
     let ctx_open = OpenQHYCCD_context();
     ctx_open.expect().times(1).return_const_st(TEST_HANDLE);
     let _res = cam.open();
@@ -1416,7 +1416,7 @@ fn open_already_open() {
 #[test]
 fn open_fail() {
     //given
-    let mut cam = Camera::new("test_camera".to_owned());
+    let cam = Camera::new("test_camera".to_owned());
     let ctx = OpenQHYCCD_context();
     ctx.expect().times(1).return_const_st(core::ptr::null());
     //when
@@ -1431,7 +1431,7 @@ fn open_fail() {
 #[test]
 fn open_nulerror() {
     //given
-    let mut cam = Camera::new("test_\0camera".to_owned());
+    let cam = Camera::new("test_\0camera".to_owned());
     let ctx = OpenQHYCCD_context();
     ctx.expect().times(0);
     //when

@@ -20,6 +20,8 @@ fn main() {
     let camera = sdk.cameras().last().expect("no camera found");
     trace!(camera = ?camera);
 
+    camera.open().expect("opening camera failed");
+
     let fw_version = camera
         .get_firmware_version()
         .expect("get_firmware_version failed");

@@ -527,7 +527,7 @@ impl Sdk {
                             }
                         }
                     }?;
-                    let mut camera = Camera::new(id.clone());
+                    let camera = Camera::new(id.clone());
                     match camera.open() {
                         Ok(_) => (),
                         Err(error) => {
@@ -537,17 +537,13 @@ impl Sdk {
                     }
                     match camera.is_cfw_plugged_in() {
                         Ok(true) => {
-                            //filter_wheels.push(camera.clone());
+                            filter_wheels.push(camera.clone());
                         }
                         Ok(false) => (),
                         Err(error) => {
                             tracing::error!(error = ?error);
                         }
                     }
-
-                    camera
-                        .set_stream_mode(StreamMode::SingleFrameMode)
-                        .expect("msg");
                     match camera.close() {
                         Ok(_) => (),
                         Err(error) => {
@@ -555,7 +551,6 @@ impl Sdk {
                         }
                     };
                     cameras.push(camera);
-                    //check for filter wheel
                 }
 
                 Ok(Sdk {
@@ -711,8 +706,6 @@ impl Camera {
     /// ```
     pub fn set_stream_mode(&self, mode: StreamMode) -> Result<()> {
         let handle = read_lock!(self.handle, SetStreamModeError { error_code: 0 })?;
-        tracing::trace!("Closing camera {}", handle as u64);
-
         match unsafe { SetQHYCCDStreamMode(handle, mode as u8) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
@@ -1612,7 +1605,7 @@ impl Camera {
     /// let camera = sdk.cameras().last().expect("no camera found");
     /// camera.open().expect("open failed");
     /// ```
-    pub fn open(&mut self) -> Result<()> {
+    pub fn open(&self) -> Result<()> {
         if self.is_open()? {
             return Ok(());
         }
@@ -1631,7 +1624,6 @@ impl Camera {
                         return Err(eyre!(error));
                     }
                     *lock = Some(QHYCCDHandle { ptr: handle });
-                    tracing::trace!("Opening camera {}", handle as u64);
                     Ok(())
                 }
                 Err(error) => {
@@ -1662,10 +1654,7 @@ impl Camera {
         })?;
 
         match *lock {
-            Some(handle) => match unsafe {
-                tracing::trace!("Closing camera {}", handle.ptr as u64);
-                CloseQHYCCD(handle.ptr)
-            } {
+            Some(handle) => match unsafe { CloseQHYCCD(handle.ptr) } {
                 QHYCCD_SUCCESS => {
                     lock.take();
                     Ok(())
@@ -1688,7 +1677,7 @@ impl Camera {
     /// let camera = sdk.cameras().last().expect("no camera found"); // this does not open the camera
     /// camera.open().expect("open failed");
     /// let is_open = camera.is_open();
-    /// println!("Is camera open: {}", is_open);
+    /// println!("Is camera open: {:?}", is_open);
     /// ```
     pub fn is_open(&self) -> Result<bool> {
         let lock = self.handle.read().map_err(|err| {

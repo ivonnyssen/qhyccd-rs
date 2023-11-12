@@ -18,7 +18,7 @@ fn main() {
     let sdk_version = sdk.version().expect("get_sdk_version failed");
     trace!(sdk_version = ?sdk_version);
 
-    let mut camera = sdk.cameras().last().expect("no camera found").clone();
+    let camera = sdk.cameras().last().expect("no camera found").clone();
     trace!(camera = ?camera);
 
     camera.open().expect("open_camera failed");
