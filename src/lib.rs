@@ -527,7 +527,7 @@ impl Sdk {
                             }
                         }
                     }?;
-                    let mut camera = Camera::new(id);
+                    let camera = Camera::new(id.clone());
                     match camera.open() {
                         Ok(_) => (),
                         Err(error) => {
@@ -551,7 +551,6 @@ impl Sdk {
                         }
                     };
                     cameras.push(camera);
-                    //check for filter wheel
                 }
 
                 Ok(Sdk {
@@ -1606,7 +1605,7 @@ impl Camera {
     /// let camera = sdk.cameras().last().expect("no camera found");
     /// camera.open().expect("open failed");
     /// ```
-    pub fn open(&mut self) -> Result<()> {
+    pub fn open(&self) -> Result<()> {
         if self.is_open()? {
             return Ok(());
         }
@@ -1678,7 +1677,7 @@ impl Camera {
     /// let camera = sdk.cameras().last().expect("no camera found"); // this does not open the camera
     /// camera.open().expect("open failed");
     /// let is_open = camera.is_open();
-    /// println!("Is camera open: {}", is_open);
+    /// println!("Is camera open: {:?}", is_open);
     /// ```
     pub fn is_open(&self) -> Result<bool> {
         let lock = self.handle.read().map_err(|err| {
