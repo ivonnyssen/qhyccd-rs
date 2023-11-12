@@ -1401,6 +1401,19 @@ fn open_success() {
 }
 
 #[test]
+fn open_already_open() {
+    //given
+    let mut cam = Camera::new("test_camera".to_owned());
+    let ctx_open = OpenQHYCCD_context();
+    ctx_open.expect().times(1).return_const_st(TEST_HANDLE);
+    let _res = cam.open();
+    //when
+    let res = cam.open();
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
 fn open_fail() {
     //given
     let mut cam = Camera::new("test_camera".to_owned());
@@ -1415,6 +1428,21 @@ fn open_fail() {
         QHYError::OpenCameraError.to_string()
     );
 }
+#[test]
+fn open_nulerror() {
+    //given
+    let mut cam = Camera::new("test_\0camera".to_owned());
+    let ctx = OpenQHYCCD_context();
+    ctx.expect().times(0);
+    //when
+    let res = cam.open();
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        "nul byte found in provided data at position: 5"
+    );
+}
 
 #[test]
 fn close_success() {
@@ -1422,6 +1450,19 @@ fn close_success() {
     let ctx = CloseQHYCCD_context();
     ctx.expect().times(1).return_const_st(QHYCCD_SUCCESS);
     let cam = new_camera();
+    //when
+    let res = cam.close();
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn close_already_closed() {
+    //given
+    let ctx = CloseQHYCCD_context();
+    ctx.expect().times(1).return_const_st(QHYCCD_SUCCESS);
+    let cam = new_camera();
+    let _res = cam.close();
     //when
     let res = cam.close();
     //then

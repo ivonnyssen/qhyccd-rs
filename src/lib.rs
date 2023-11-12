@@ -1,12 +1,18 @@
 //!
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
-use core::ffi::c_char;
-use core::ffi::CStr;
+use std::ffi::c_char;
+use std::ffi::CStr;
+use std::sync::Arc;
+use std::sync::RwLock;
 
 use eyre::eyre;
 use eyre::Result;
 use eyre::WrapErr;
+
+use crate::QHYError::*;
+#[macro_use]
+extern crate educe;
 
 #[cfg(test)]
 pub mod mocks;
@@ -472,6 +478,7 @@ pub struct SDKVersion {
 /// ```
 pub struct Sdk {
     cameras: Vec<Camera>,
+    filter_wheels: Vec<Camera>,
 }
 
 #[allow(unused_unsafe)]
@@ -488,7 +495,7 @@ impl Sdk {
             QHYCCD_SUCCESS => {
                 let num_cameras = match unsafe { ScanQHYCCD() } {
                     QHYCCD_ERROR => {
-                        let error = QHYError::ScanQHYCCDError;
+                        let error = ScanQHYCCDError;
                         tracing::error!(error = ?error);
                         Err(eyre!(error))
                     }
@@ -496,6 +503,7 @@ impl Sdk {
                 }?;
 
                 let mut cameras = Vec::with_capacity(num_cameras as usize);
+                let mut filter_wheels = Vec::with_capacity(num_cameras as usize);
                 for index in 0..num_cameras {
                     let id = {
                         let mut c_id: [c_char; 32] = [0; 32];
@@ -512,20 +520,47 @@ impl Sdk {
                                     Ok(id.to_owned())
                                 }
                                 error_code => {
-                                    let error = QHYError::GetCameraIdError { error_code };
+                                    let error = GetCameraIdError { error_code };
                                     tracing::error!(error = ?error);
                                     Err(eyre!(error))
                                 }
                             }
                         }
                     }?;
-                    cameras.push(Camera::new(id));
+                    let mut camera = Camera::new(id);
+                    match camera.open() {
+                        Ok(_) => (),
+                        Err(error) => {
+                            tracing::error!(error = ?error);
+                            continue;
+                        }
+                    }
+                    match camera.is_cfw_plugged_in() {
+                        Ok(true) => {
+                            filter_wheels.push(camera.clone());
+                        }
+                        Ok(false) => (),
+                        Err(error) => {
+                            tracing::error!(error = ?error);
+                        }
+                    }
+                    match camera.close() {
+                        Ok(_) => (),
+                        Err(error) => {
+                            tracing::error!(error = ?error);
+                        }
+                    };
+                    cameras.push(camera);
+                    //check for filter wheel
                 }
 
-                Ok(Sdk { cameras })
+                Ok(Sdk {
+                    cameras,
+                    filter_wheels,
+                })
             }
             error_code => {
-                let error = QHYError::InitSDKError { error_code };
+                let error = InitSDKError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -553,16 +588,7 @@ impl Sdk {
     /// println!("{} filter wheels connected.", sdk.filter_wheels().count());
     /// ```
     pub fn filter_wheels(&self) -> impl Iterator<Item = &impl FilterWheel> {
-        self.cameras
-            .iter()
-            .filter(|camera| match camera.is_cfw_plugged_in() {
-                Ok(true) => true,
-                Ok(false) => false,
-                Err(error) => {
-                    tracing::error!(error = ?error);
-                    false
-                }
-            })
+        self.filter_wheels.iter()
     }
 
     /// Returns the version of the SDK
@@ -586,24 +612,11 @@ impl Sdk {
                 subday,
             }),
             error_code => {
-                let error = QHYError::GetSDKVersionError { error_code };
+                let error = GetSDKVersionError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
         }
-    }
-
-    /// Adds a manually created camera to the camera iterator of the SDK
-    /// # Example
-    /// ```no_run
-    /// use qhyccd_rs::{Sdk, Camera};
-    /// let sdk = Sdk::new().expect("SDK::new failed");
-    /// let camera = Camera::new("test".to_string()).expect("Camera::new failed");
-    /// sdk.add_camera(camera);
-    /// println!("{} cameras connected.", sdk.cameras().count());
-    /// ```
-    pub fn add_camera(&mut self, camera: Camera) {
-        self.cameras.push(camera);
     }
 }
 
@@ -613,19 +626,45 @@ impl Drop for Sdk {
         match unsafe { ReleaseQHYCCDResource() } {
             QHYCCD_SUCCESS => (),
             error_code => {
-                let error = QHYError::CloseSDKError { error_code };
+                let error = CloseSDKError { error_code };
                 tracing::error!(error = ?error);
             }
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+struct QHYCCDHandle {
+    pub ptr: *const std::ffi::c_void,
+}
+
+//Safety: QHYCCDHandle is only used in Camera and Camera is Send and Sync
+unsafe impl Send for QHYCCDHandle {}
+unsafe impl Sync for QHYCCDHandle {}
+
+#[derive(Educe)]
+#[educe(Debug, Clone, PartialEq)]
 /// The representation of a camera. It is constructed by the SDK and can be used to
 /// interact with the camera.
 pub struct Camera {
     id: String,
-    handle: Option<*const std::ffi::c_void>,
+    #[educe(PartialEq(ignore))]
+    handle: Arc<RwLock<Option<QHYCCDHandle>>>,
+}
+
+macro_rules! read_lock {
+    ($var:expr, $wrap:expr) => {
+        $var.read().map_err(|err| {
+            tracing::error!(error=?err);
+            eyre!("Could not acquire read lock on camera handle")
+        }).and_then(|lock|{match *lock {
+            Some(handle) => Ok(handle.ptr),
+            None => {
+                tracing::error!(error = ?CameraNotOpenError);
+                Err(eyre!(CameraNotOpenError))
+            }
+        }}).wrap_err($wrap)
+    }
 }
 
 #[allow(unused_unsafe)]
@@ -641,7 +680,7 @@ impl Camera {
     pub fn new(id: String) -> Self {
         Self {
             id: id.clone(),
-            handle: None,
+            handle: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -667,26 +706,15 @@ impl Camera {
     /// camera.set_stream_mode(StreamMode::LiveMode).expect("set_stream_mode failed");
     /// ```
     pub fn set_stream_mode(&self, mode: StreamMode) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::SetStreamModeError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, SetStreamModeError { error_code: 0 })?;
         match unsafe { SetQHYCCDStreamMode(handle, mode as u8) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::SetStreamModeError { error_code };
+                let error = SetStreamModeError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
         }
-    }
-
-    fn handle(&self) -> Result<*const std::ffi::c_void> {
-        self.handle.ok_or_else(|| {
-            let error = QHYError::CameraNotOpenError;
-            tracing::error!(error = ?error);
-            eyre!(error)
-        })
     }
 
     /// Sets the readout mode of the camera with the id of the `ReadoutMode` between 0 and the value
@@ -700,14 +728,11 @@ impl Camera {
     /// camera.set_readout_mode(0).expect("set_readout_mode failed");
     /// ```
     pub fn set_readout_mode(&self, mode: u32) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::SetReadoutModeError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, SetReadoutModeError { error_code: 0 })?;
         match unsafe { SetQHYCCDReadMode(handle, mode) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::SetReadoutModeError { error_code };
+                let error = SetReadoutModeError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -725,10 +750,7 @@ impl Camera {
     /// println!("Camera model: {}", model);
     /// ```
     pub fn get_model(&self) -> Result<String> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetCameraModelError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, GetCameraModelError { error_code: 0 })?;
         let mut model: [c_char; 80] = [0; 80];
         match unsafe { GetQHYCCDModel(handle, model.as_mut_ptr()) } {
             QHYCCD_SUCCESS => {
@@ -742,7 +764,7 @@ impl Camera {
                 Ok(model.to_string())
             }
             error_code => {
-                let error = QHYError::GetCameraModelError { error_code };
+                let error = GetCameraModelError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -760,14 +782,12 @@ impl Camera {
     /// camera.init().expect("init failed");
     /// ```
     pub fn init(&self) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::InitCameraError { error_code: 0 })?;
+        let handle = read_lock!(self.handle, InitCameraError { error_code: 0 })?;
 
         match unsafe { InitQHYCCD(handle) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::InitCameraError { error_code };
+                let error = InitCameraError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -785,10 +805,7 @@ impl Camera {
     /// println!("Firmware version: {}", firmware_version);
     /// ```
     pub fn get_firmware_version(&self) -> Result<String> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetFirmwareVersionError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, GetFirmwareVersionError { error_code: 0 })?;
         let mut version = [0u8; 32];
         match unsafe { GetQHYCCDFWVersion(handle, version.as_mut_ptr()) } {
             QHYCCD_SUCCESS => {
@@ -809,7 +826,7 @@ impl Camera {
                 }
             }
             error_code => {
-                let error = QHYError::GetFirmwareVersionError { error_code };
+                let error = GetFirmwareVersionError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -827,14 +844,12 @@ impl Camera {
     /// println!("Number of readout modes: {}", num_readout_modes);
     /// ```
     pub fn get_number_of_readout_modes(&self) -> Result<u32> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetNumberOfReadoutModesError)?;
+        let handle = read_lock!(self.handle, GetNumberOfReadoutModesError)?;
 
         let mut num: u32 = 0;
         match unsafe { GetQHYCCDNumberOfReadModes(handle, &mut num as *mut u32) } {
             QHYCCD_ERROR => {
-                let error = QHYError::GetNumberOfReadoutModesError;
+                let error = GetNumberOfReadoutModesError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -856,12 +871,11 @@ impl Camera {
     /// }
     /// ```
     pub fn get_readout_mode_name(&self, index: u32) -> Result<String> {
-        let handle = self.handle().wrap_err(QHYError::GetReadoutModeNameError)?;
-
+        let handle = read_lock!(self.handle, GetReadoutModeNameError)?;
         let mut name: [c_char; 80] = [0; 80];
         match unsafe { GetQHYCCDReadModeName(handle, index, name.as_mut_ptr()) } {
             QHYCCD_ERROR => {
-                let error = QHYError::GetReadoutModeNameError;
+                let error = GetReadoutModeNameError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -892,9 +906,7 @@ impl Camera {
     /// }
     /// ```
     pub fn get_readout_mode_resolution(&self, index: u32) -> Result<(u32, u32)> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetReadoutModeResolutionError)?;
+        let handle = read_lock!(self.handle, GetReadoutModeResolutionError)?;
 
         let mut width: u32 = 0;
         let mut height: u32 = 0;
@@ -908,7 +920,7 @@ impl Camera {
         } {
             QHYCCD_SUCCESS => Ok((width, height)),
             _ => {
-                let error = QHYError::GetReadoutModeResolutionError;
+                let error = GetReadoutModeResolutionError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -927,13 +939,12 @@ impl Camera {
     /// println!("Readout mode: {}", readout_mode);
     /// ```
     pub fn get_readout_mode(&self) -> Result<u32> {
-        let handle = self.handle().wrap_err(QHYError::GetReadoutModeError)?;
-
+        let handle = read_lock!(self.handle, GetReadoutModeError)?;
         let mut mode: u32 = 0;
         match unsafe { GetQHYCCDReadMode(handle, &mut mode as *mut u32) } {
             QHYCCD_SUCCESS => Ok(mode),
             _ => {
-                let error = QHYError::GetReadoutModeError;
+                let error = GetReadoutModeError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -952,11 +963,10 @@ impl Camera {
     /// println!("Type: {}", tipe);
     /// ```
     pub fn get_type(&self) -> Result<u32> {
-        let handle = self.handle().wrap_err(QHYError::GetCameraTypeError)?;
-
+        let handle = read_lock!(self.handle, GetCameraTypeError)?;
         match unsafe { GetQHYCCDType(handle) } {
             QHYCCD_ERROR => {
-                let error = QHYError::GetCameraTypeError;
+                let error = GetCameraTypeError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -976,14 +986,11 @@ impl Camera {
     /// camera.set_bin_mode(2, 2).expect("set_bin_mode failed");
     /// ```
     pub fn set_bin_mode(&self, bin_x: u32, bin_y: u32) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::SetBinModeError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, SetBinModeError { error_code: 0 })?;
         match unsafe { SetQHYCCDBinMode(handle, bin_x, bin_y) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::SetBinModeError { error_code };
+                let error = SetBinModeError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1001,14 +1008,11 @@ impl Camera {
     /// camera.set_debayer(false).expect("set_debayer failed");
     ///```
     pub fn set_debayer(&self, on: bool) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::SetDebayerError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, SetDebayerError { error_code: 0 })?;
         match unsafe { SetQHYCCDDebayerOnOff(handle, on) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::SetDebayerError { error_code };
+                let error = SetDebayerError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1033,16 +1037,13 @@ impl Camera {
     /// camera.set_roi(roi).expect("set_roi failed");
     /// ```
     pub fn set_roi(&self, roi: CCDChipArea) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::SetRoiError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, SetRoiError { error_code: 0 })?;
         match unsafe {
             SetQHYCCDResolution(handle, roi.start_x, roi.start_y, roi.width, roi.height)
         } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::SetRoiError { error_code };
+                let error = SetRoiError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1061,14 +1062,11 @@ impl Camera {
     /// camera.begin_live().expect("begin_live failed");
     /// ```
     pub fn begin_live(&self) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::BeginLiveError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, BeginLiveError { error_code: 0 })?;
         match unsafe { BeginQHYCCDLive(handle) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::BeginLiveError { error_code };
+                let error = BeginLiveError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1089,13 +1087,11 @@ impl Camera {
     /// camera.end_live().expect("end_live failed");
     /// ```
     pub fn end_live(&self) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::EndLiveError { error_code: 0 })?;
+        let handle = read_lock!(self.handle, EndLiveError { error_code: 0 })?;
         match unsafe { StopQHYCCDLive(handle) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::EndLiveError { error_code };
+                let error = EndLiveError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1119,11 +1115,10 @@ impl Camera {
     /// let image = camera.get_single_frame(buffer_size).expect("get_camera_single_frame failed");
     /// ```
     pub fn get_image_size(&self) -> Result<usize> {
-        let handle = self.handle().wrap_err(QHYError::GetImageSizeError)?;
-
+        let handle = read_lock!(self.handle, GetImageSizeError)?;
         match unsafe { GetQHYCCDMemLength(handle) } {
             QHYCCD_ERROR => {
-                let error = QHYError::GetImageSizeError;
+                let error = GetImageSizeError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1158,10 +1153,7 @@ impl Camera {
     /// camera.end_live().expect("end_camera_live failed");
     /// ```
     pub fn get_live_frame(&self, buffer_size: usize) -> Result<ImageData> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetLiveFrameError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, GetLiveFrameError { error_code: 0 })?;
         let mut width: u32 = 0;
         let mut height: u32 = 0;
         let mut bpp: u32 = 0;
@@ -1185,7 +1177,7 @@ impl Camera {
                 channels,
             }),
             error_code => {
-                let error = QHYError::GetLiveFrameError { error_code };
+                let error = GetLiveFrameError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1209,10 +1201,7 @@ impl Camera {
     /// let image = camera.get_single_frame(buffer_size).expect("get_camera_single_frame failed");
     /// ```
     pub fn get_single_frame(&self, buffer_size: usize) -> Result<ImageData> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetSingleFrameError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, GetSingleFrameError { error_code: 0 })?;
         let mut width: u32 = 0;
         let mut height: u32 = 0;
         let mut bpp: u32 = 0;
@@ -1236,7 +1225,7 @@ impl Camera {
                 channels,
             }),
             error_code => {
-                let error = QHYError::GetSingleFrameError { error_code };
+                let error = GetSingleFrameError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1254,10 +1243,7 @@ impl Camera {
     /// println!("Chip area: {:?}", chip_area);
     /// ```
     pub fn get_overscan_area(&self) -> Result<CCDChipArea> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetOverscanAreaError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, GetOverscanAreaError { error_code: 0 })?;
         let mut start_x: u32 = 0;
         let mut start_y: u32 = 0;
         let mut width: u32 = 0;
@@ -1278,7 +1264,7 @@ impl Camera {
                 height,
             }),
             error_code => {
-                let error = QHYError::GetOverscanAreaError { error_code };
+                let error = GetOverscanAreaError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1296,10 +1282,7 @@ impl Camera {
     /// println!("Chip area: {:?}", chip_area);
     /// ```
     pub fn get_effective_area(&self) -> Result<CCDChipArea> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetEffectiveAreaError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, GetEffectiveAreaError { error_code: 0 })?;
         let mut start_x: u32 = 0;
         let mut start_y: u32 = 0;
         let mut width: u32 = 0;
@@ -1320,7 +1303,7 @@ impl Camera {
                 height,
             }),
             error_code => {
-                let error = QHYError::GetEffectiveAreaError { error_code };
+                let error = GetEffectiveAreaError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1343,14 +1326,11 @@ impl Camera {
     /// camera.start_single_frame_exposure().expect("start_single_frame_exposure failed");
     /// ```
     pub fn start_single_frame_exposure(&self) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::StartSingleFrameExposureError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, StartSingleFrameExposureError { error_code: 0 })?;
         match unsafe { ExpQHYCCDSingleFrame(handle) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::StartSingleFrameExposureError { error_code };
+                let error = StartSingleFrameExposureError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1371,13 +1351,10 @@ impl Camera {
     /// println!("Remaining exposure: {}", remaining_exposure);
     /// ```
     pub fn get_remaining_exposure_us(&self) -> Result<u32> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetExposureRemainingError)?;
-
+        let handle = read_lock!(self.handle, GetExposureRemainingError)?;
         match unsafe { GetQHYCCDExposureRemaining(handle) } {
             QHYCCD_ERROR => {
-                let error = QHYError::GetExposureRemainingError;
+                let error = GetExposureRemainingError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1400,14 +1377,11 @@ impl Camera {
     /// /* retrieve image data */
     /// ```
     pub fn stop_exposure(&self) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::StopExposureError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, StopExposureError { error_code: 0 })?;
         match unsafe { CancelQHYCCDExposing(handle) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::StopExposureError { error_code };
+                let error = StopExposureError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1426,14 +1400,11 @@ impl Camera {
     /// camera.abort_exposure_and_readout().expect("abort_exposure failed");
     /// ```
     pub fn abort_exposure_and_readout(&self) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::AbortExposureAndReadoutError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, AbortExposureAndReadoutError { error_code: 0 })?;
         match unsafe { CancelQHYCCDExposingAndReadout(handle) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::AbortExposureAndReadoutError { error_code };
+                let error = AbortExposureAndReadoutError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1458,13 +1429,10 @@ impl Camera {
     /// let camera_is_color = camera.is_control_available(Control::CamColor).is_ok(); //this returns a `BayerID` if it is a color camera
     /// ```
     pub fn is_control_available(&self, control: Control) -> Result<u32> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::IsFeatureSupportedError { feature: control })?;
-
+        let handle = read_lock!(self.handle, IsFeatureSupportedError { feature: control })?;
         match unsafe { IsQHYCCDControlAvailable(handle, control as u32) } {
             QHYCCD_ERROR => {
-                let error = QHYError::IsFeatureSupportedError { feature: control };
+                let error = IsFeatureSupportedError { feature: control };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1483,9 +1451,7 @@ impl Camera {
     /// println!("Chip info: {:?}", chip_info);
     /// ```
     pub fn get_ccd_info(&self) -> Result<CCDChipInfo> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetCCDInfoError { error_code: 0 })?;
+        let handle = read_lock!(self.handle, GetCCDInfoError { error_code: 0 })?;
         let mut chipw: f64 = 0.0;
         let mut chiph: f64 = 0.0;
         let mut imagew: u32 = 0;
@@ -1515,7 +1481,7 @@ impl Camera {
                 bits_per_pixel: bpp,
             }),
             error_code => {
-                let error = QHYError::GetCCDInfoError { error_code };
+                let error = GetCCDInfoError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1533,14 +1499,11 @@ impl Camera {
     /// camera.set_bit_mode(8).expect("set_bit_mode failed");
     /// ```
     pub fn set_bit_mode(&self, mode: u32) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::SetBitModeError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, SetBitModeError { error_code: 0 })?;
         match unsafe { SetQHYCCDBitsMode(handle, mode) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::SetBitModeError { error_code };
+                let error = SetBitModeError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1560,13 +1523,10 @@ impl Camera {
     /// };
     /// ```
     pub fn get_parameter(&self, control: Control) -> Result<f64> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::GetParameterError { control })?;
-
+        let handle = read_lock!(self.handle, GetParameterError { control })?;
         let res = unsafe { GetQHYCCDParam(handle, control as u32) };
         if (res - QHYCCD_ERROR_F64).abs() < f64::EPSILON {
-            let error = QHYError::GetParameterError { control };
+            let error = GetParameterError { control };
             tracing::error!(error = ?error);
             Err(eyre!(error))
         } else {
@@ -1584,14 +1544,11 @@ impl Camera {
     /// camera.set_parameter(Control::Exposure, 2000000.0).expect("set_parameter failed");
     /// ```
     pub fn set_parameter(&self, control: Control, value: f64) -> Result<()> {
-        let handle = self
-            .handle()
-            .wrap_err(QHYError::SetParameterError { error_code: 0 })?;
-
+        let handle = read_lock!(self.handle, SetParameterError { error_code: 0 })?;
         match unsafe { SetQHYCCDParam(handle, control as u32, value) } {
             QHYCCD_SUCCESS => Ok(()),
             error_code => {
-                let error = QHYError::SetParameterError { error_code };
+                let error = SetParameterError { error_code };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1627,13 +1584,12 @@ impl Camera {
     /// println!("Is filter wheel plugged in: {}", is_cfw_plugged_in);
     /// ```
     pub fn is_cfw_plugged_in(&self) -> Result<bool> {
-        let handle = self.handle().wrap_err(QHYError::IsCfwPluggedInError)?;
-
+        let handle = read_lock!(self.handle, IsCfwPluggedInError)?;
         match unsafe { IsQHYCCDCFWPlugged(handle) } {
             QHYCCD_SUCCESS => Ok(true),
             QHYCCD_ERROR => Ok(false),
             _ => {
-                let error = QHYError::IsCfwPluggedInError;
+                let error = IsCfwPluggedInError;
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }
@@ -1651,26 +1607,31 @@ impl Camera {
     /// camera.open().expect("open failed");
     /// ```
     pub fn open(&mut self) -> Result<()> {
-        match self.handle() {
-            Ok(_) => Ok(()),
-            Err(_) => unsafe {
-                match std::ffi::CString::new(self.id.clone()) {
-                    Ok(c_id) => {
-                        let handle = OpenQHYCCD(c_id.as_ptr());
-                        if handle.is_null() {
-                            let error = QHYError::OpenCameraError;
-                            tracing::error!(error = ?error);
-                            return Err(eyre!(error));
-                        }
-                        self.handle = Some(handle);
-                    }
-                    Err(error) => {
+        if self.is_open()? {
+            return Ok(());
+        }
+        // read and see if the handle is already Some(_)
+        let mut lock = self.handle.write().map_err(|err| {
+            tracing::error!(error=?err);
+            eyre!("Could not acquire write lock on camera handle")
+        })?;
+        unsafe {
+            match std::ffi::CString::new(self.id.clone()) {
+                Ok(c_id) => {
+                    let handle = OpenQHYCCD(c_id.as_ptr());
+                    if handle.is_null() {
+                        let error = OpenCameraError;
                         tracing::error!(error = ?error);
                         return Err(eyre!(error));
                     }
+                    *lock = Some(QHYCCDHandle { ptr: handle });
+                    Ok(())
                 }
-                Ok(())
-            },
+                Err(error) => {
+                    tracing::error!(error = ?error);
+                    Err(eyre!(error))
+                }
+            }
         }
     }
 
@@ -1685,19 +1646,51 @@ impl Camera {
     /// camera.close().expect("close failed");
     /// ```
     pub fn close(&self) -> Result<()> {
-        match self.handle() {
-            Ok(handle) => match unsafe { CloseQHYCCD(handle) } {
-                QHYCCD_SUCCESS => Ok(()),
+        if !self.is_open()? {
+            return Ok(());
+        }
+        let mut lock = self.handle.write().map_err(|err| {
+            tracing::error!(error=?err);
+            eyre!("Could not acquire write lock on camera handle")
+        })?;
+
+        match *lock {
+            Some(handle) => match unsafe { CloseQHYCCD(handle.ptr) } {
+                QHYCCD_SUCCESS => {
+                    lock.take();
+                    Ok(())
+                }
                 error_code => {
-                    let error = QHYError::CloseCameraError { error_code };
+                    let error = CloseCameraError { error_code };
                     tracing::error!(error = ?error);
                     Err(eyre!(error))
                 }
             },
-            Err(_) => Ok(()),
+            None => Ok(()),
         }
     }
+
+    /// Returns `true` if the camera is open
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,Camera};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let camera = sdk.cameras().last().expect("no camera found"); // this does not open the camera
+    /// camera.open().expect("open failed");
+    /// let is_open = camera.is_open();
+    /// println!("Is camera open: {}", is_open);
+    /// ```
+    pub fn is_open(&self) -> Result<bool> {
+        let lock = self.handle.read().map_err(|err| {
+            tracing::error!(error=?err);
+            eyre!("Could not acquire read lock on camera handle")
+        })?;
+        Ok((*lock).is_some())
+    }
 }
+
+unsafe impl Send for Camera {}
+unsafe impl Sync for Camera {}
 
 /// Filter wheels are directly connected to the QHY camera and can be controlled through the camera
 pub trait FilterWheel {
