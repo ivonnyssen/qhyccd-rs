@@ -105,7 +105,7 @@ pub enum QHYError {
     #[error("Error getting camera effective area, error code {:?}", error_code)]
     GetEffectiveAreaError { error_code: u32 },
     #[error("Error getting determining support for camera feature {:?}", feature)]
-    IsFeatureSupportedError { feature: Control },
+    IsControlAvailableError { feature: Control },
     #[error("Error starting single frame exposure, error code {:?}", error_code)]
     StartSingleFrameExposureError { error_code: u32 },
     #[error("Error getting camera number of read modes")]
@@ -1428,10 +1428,10 @@ impl Camera {
     /// let camera_is_color = camera.is_control_available(Control::CamColor).is_ok(); //this returns a `BayerID` if it is a color camera
     /// ```
     pub fn is_control_available(&self, control: Control) -> Result<u32> {
-        let handle = read_lock!(self.handle, IsFeatureSupportedError { feature: control })?;
+        let handle = read_lock!(self.handle, IsControlAvailableError { feature: control })?;
         match unsafe { IsQHYCCDControlAvailable(handle, control as u32) } {
             QHYCCD_ERROR => {
-                let error = IsFeatureSupportedError { feature: control };
+                let error = IsControlAvailableError { feature: control };
                 tracing::error!(error = ?error);
                 Err(eyre!(error))
             }

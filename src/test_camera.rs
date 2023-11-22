@@ -1100,7 +1100,7 @@ fn is_control_available_fail() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap().to_string(),
-        QHYError::IsFeatureSupportedError {
+        QHYError::IsControlAvailableError {
             feature: Control::Brightness
         }
         .to_string()
@@ -1350,7 +1350,7 @@ fn set_if_available_fail() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap().to_string(),
-        QHYError::IsFeatureSupportedError {
+        QHYError::IsControlAvailableError {
             feature: Control::TransferBit
         }
         .to_string()
