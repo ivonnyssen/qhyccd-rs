@@ -16,7 +16,7 @@ qhyccd-rs = "0.1.2"
 
 ## Rust version requirements
 
-qhyccd-rs works with stable Rust. The minimum required Rust version is 1.64.0.
+qhyccd-rs works with stable Rust. The minimum required Rust version is 1.65.0.
 
 ## Version of libqhyccd
 
