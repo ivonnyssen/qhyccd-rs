@@ -30,7 +30,7 @@ fn main() {
 
     if camera
         .is_control_available(Control::CamLiveVideoMode)
-        .is_err()
+        .is_none()
     {
         panic!("Control::CamLiveVideoMode is not supported");
     }
