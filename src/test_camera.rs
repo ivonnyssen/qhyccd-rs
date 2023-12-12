@@ -1070,7 +1070,7 @@ fn abort_exposure_and_readout_fail() {
 }
 
 #[test]
-fn is_control_available_success() {
+fn is_control_available_success_some() {
     //given
     let ctx = IsQHYCCDControlAvailable_context();
     ctx.expect()
@@ -1086,7 +1086,7 @@ fn is_control_available_success() {
 }
 
 #[test]
-fn is_control_available_fail() {
+fn is_control_available_success_none() {
     //given
     let ctx = IsQHYCCDControlAvailable_context();
     ctx.expect()
