@@ -104,8 +104,8 @@ pub enum QHYError {
     GetOverscanAreaError { error_code: u32 },
     #[error("Error getting camera effective area, error code {:?}", error_code)]
     GetEffectiveAreaError { error_code: u32 },
-    #[error("Error getting determining support for camera feature {:?}", feature)]
-    IsControlAvailableError { feature: Control },
+    #[error("Error getting determining support for camera feature {:?}", control)]
+    IsControlAvailableError { control: Control },
     #[error("Error starting single frame exposure, error code {:?}", error_code)]
     StartSingleFrameExposureError { error_code: u32 },
     #[error("Error getting camera number of read modes")]
@@ -426,7 +426,7 @@ pub struct CCDChipArea {
 }
 
 #[derive(Debug, PartialEq)]
-/// this struct is returned ffrom `is_control_available` when used with `Control::CamColor`
+/// this struct is returned from `is_control_available` when used with `Control::CamColor`
 pub enum BayerId {
     ///GBRG
     BayerGb = 1,
@@ -1421,21 +1421,24 @@ impl Camera {
     /// let sdk = Sdk::new().expect("SDK::new failed");
     /// let camera = sdk.cameras().last().expect("no camera found");
     /// camera.open().expect("open failed");
-    /// if camera.is_control_available(Control::CamLiveVideoMode).is_err()
+    /// if camera.is_control_available(Control::CamLiveVideoMode).is_none()
     /// {
     ///    println!("Control::CamLiveVideoMode is not supported");
     /// }
-    /// let camera_is_color = camera.is_control_available(Control::CamColor).is_ok(); //this returns a `BayerID` if it is a color camera
+    /// let camera_is_color = camera.is_control_available(Control::CamColor).is_some(); //this returns a `BayerID` if it is a color camera
     /// ```
-    pub fn is_control_available(&self, control: Control) -> Result<u32> {
-        let handle = read_lock!(self.handle, IsControlAvailableError { feature: control })?;
+    pub fn is_control_available(&self, control: Control) -> Option<u32> {
+        let handle = match read_lock!(self.handle, IsControlAvailableError { control }) {
+            Ok(handle) => handle,
+            Err(_) => return None,
+        };
         match unsafe { IsQHYCCDControlAvailable(handle, control as u32) } {
             QHYCCD_ERROR => {
-                let error = IsControlAvailableError { feature: control };
+                let error = IsControlAvailableError { control };
                 tracing::error!(error = ?error);
-                Err(eyre!(error))
+                None
             }
-            is_supported => Ok(is_supported),
+            is_supported => Some(is_supported),
         }
     }
 
@@ -1566,8 +1569,8 @@ impl Camera {
     /// ```
     pub fn set_if_available(&self, control: Control, value: f64) -> Result<()> {
         match self.is_control_available(control) {
-            Ok(_) => self.set_parameter(control, value),
-            Err(e) => Err(e),
+            Some(_) => self.set_parameter(control, value),
+            None => Err(eyre!(IsControlAvailableError { control })),
         }
     }
 
@@ -1699,9 +1702,9 @@ pub trait FilterWheel {
 
 impl FilterWheel for Camera {
     fn positions(&self) -> u32 {
-        match self.is_control_available(Control::CfwSlotsNum).is_ok() {
-            true => self.get_parameter(Control::CfwSlotsNum).unwrap_or_default() as u32,
-            false => 0,
+        match self.is_control_available(Control::CfwSlotsNum) {
+            Some(_) => self.get_parameter(Control::CfwSlotsNum).unwrap_or_default() as u32,
+            None => 0,
         }
     }
 }

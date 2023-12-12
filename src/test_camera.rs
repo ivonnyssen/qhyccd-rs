@@ -1070,7 +1070,7 @@ fn abort_exposure_and_readout_fail() {
 }
 
 #[test]
-fn is_control_available_success() {
+fn is_control_available_success_some() {
     //given
     let ctx = IsQHYCCDControlAvailable_context();
     ctx.expect()
@@ -1081,12 +1081,12 @@ fn is_control_available_success() {
     //when
     let res = cam.is_control_available(Control::Brightness);
     //then
-    assert!(res.is_ok());
+    assert!(res.is_some());
     assert_eq!(res.unwrap(), QHYCCD_SUCCESS)
 }
 
 #[test]
-fn is_control_available_fail() {
+fn is_control_available_success_none() {
     //given
     let ctx = IsQHYCCDControlAvailable_context();
     ctx.expect()
@@ -1097,14 +1097,7 @@ fn is_control_available_fail() {
     //when
     let res = cam.is_control_available(Control::Brightness);
     //then
-    assert!(res.is_err());
-    assert_eq!(
-        res.err().unwrap().to_string(),
-        QHYError::IsControlAvailableError {
-            feature: Control::Brightness
-        }
-        .to_string()
-    );
+    assert!(res.is_none());
 }
 
 #[test]
@@ -1351,7 +1344,7 @@ fn set_if_available_fail() {
     assert_eq!(
         res.err().unwrap().to_string(),
         QHYError::IsControlAvailableError {
-            feature: Control::TransferBit
+            control: Control::TransferBit
         }
         .to_string()
     );

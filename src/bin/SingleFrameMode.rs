@@ -29,7 +29,7 @@ fn main() {
 
     if camera
         .is_control_available(Control::CamSingleFrameMode)
-        .is_err()
+        .is_none()
     {
         panic!("CameraFeature::CamLiveVideoMode is not supported");
     }
@@ -60,7 +60,7 @@ fn main() {
     let info = camera.get_ccd_info().expect("get_camera_ccd_info failed");
     trace!(ccd_info = ?info);
 
-    let camera_is_color = camera.is_control_available(Control::CamColor).is_ok(); //this returns a BayerID if it is a color camera
+    let camera_is_color = camera.is_control_available(Control::CamColor).is_some(); //this returns a BayerID if it is a color camera
     trace!(camera_is_color = ?camera_is_color);
 
     match camera.set_if_available(Control::UsbTraffic, 255.0) {
