@@ -1435,7 +1435,7 @@ impl Camera {
         match unsafe { IsQHYCCDControlAvailable(handle, control as u32) } {
             QHYCCD_ERROR => {
                 let error = IsControlAvailableError { control };
-                tracing::error!(error = ?error);
+                tracing::debug!(control = ?error);
                 None
             }
             is_supported => Some(is_supported),
@@ -1519,7 +1519,7 @@ impl Camera {
     /// let sdk = Sdk::new().expect("SDK::new failed");
     /// let camera = sdk.cameras().last().expect("no camera found");
     /// camera.open().expect("open failed");
-    /// let number_of_filter_wheel_positions = match camera.is_control_available(Control::CfwSlotsNum).is_ok() {
+    /// let number_of_filter_wheel_positions = match camera.is_control_available(Control::CfwSlotsNum).is_some() {
     ///     true => camera.get_parameter(Control::CfwSlotsNum).unwrap_or_default() as u32,
     ///     false => 0,
     /// };

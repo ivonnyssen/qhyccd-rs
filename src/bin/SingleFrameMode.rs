@@ -60,8 +60,16 @@ fn main() {
     let info = camera.get_ccd_info().expect("get_camera_ccd_info failed");
     trace!(ccd_info = ?info);
 
-    let camera_is_color = camera.is_control_available(Control::CamColor).is_some(); //this returns a BayerID if it is a color camera
-    trace!(camera_is_color = ?camera_is_color);
+    let bayer_id = match camera.is_control_available(Control::CamIsColor) {
+        Some(camera_is_color) => {
+            trace!(camera_is_color = ?camera_is_color);
+            //camera.set_debayer(true).expect("set debayer true failed"); -- this core-dumps on
+            //QHY290C
+            camera.is_control_available(Control::CamColor)
+        }
+        None => None,
+    };
+    trace!(bayer_id = ?bayer_id);
 
     match camera.set_if_available(Control::UsbTraffic, 255.0) {
         Ok(_) => trace!(control_usb_traffic = 255.0),
