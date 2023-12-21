@@ -9,6 +9,7 @@ use std::sync::RwLock;
 use eyre::eyre;
 use eyre::Result;
 use eyre::WrapErr;
+use libqhyccd_sys::GetQHYCCDParamMinMaxStep;
 
 use crate::QHYError::*;
 #[macro_use]
@@ -130,6 +131,14 @@ pub enum QHYError {
     IsCfwPluggedInError,
     #[error("Error camera is not open")]
     CameraNotOpenError,
+    #[error(
+        "Error getting camera min, max, step for parameter, error code {:?}",
+        control
+    )]
+    GetMinMaxStepError {
+        /// here the control field has the `Control` enum variant we tried to get the value for
+        control: Control,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -1533,6 +1542,38 @@ impl Camera {
             Err(eyre!(error))
         } else {
             Ok(res)
+        }
+    }
+
+    /// Returns the min, max and step value for a given control
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,Camera,Control};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let camera = sdk.cameras().last().expect("no camera found");
+    /// camera.open().expect("open failed");
+    /// let (min_exposure, max_exposure, exposure_resolution) = camera.get_parameter_min_max_step(Control::Exposure).expect("getting min,max,step failed");
+    /// ```
+    pub fn get_parameter_min_max_step(&self, control: Control) -> Result<(f64, f64, f64)> {
+        let handle = read_lock!(self.handle, GetMinMaxStepError { control })?;
+        let mut min: f64 = 0.0;
+        let mut max: f64 = 0.0;
+        let mut step: f64 = 0.0;
+        match unsafe {
+            GetQHYCCDParamMinMaxStep(
+                handle,
+                control as u32,
+                &mut min as *mut f64,
+                &mut max as *mut f64,
+                &mut step as *mut f64,
+            )
+        } {
+            QHYCCD_SUCCESS => Ok((min, max, step)),
+            _ => {
+                let error = GetMinMaxStepError { control };
+                tracing::error!(error = ?error);
+                Err(eyre!(error))
+            }
         }
     }
 
