@@ -387,7 +387,7 @@ pub enum StreamMode {
     LiveMode = 1,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 /// Camera sensor info
 pub struct CCDChipInfo {
     /// chip width in um
