@@ -9,7 +9,6 @@ use std::sync::RwLock;
 use eyre::eyre;
 use eyre::Result;
 use eyre::WrapErr;
-use libqhyccd_sys::GetQHYCCDParamMinMaxStep;
 
 use crate::QHYError::*;
 #[macro_use]
@@ -23,12 +22,13 @@ use libqhyccd_sys::{
     BeginQHYCCDLive, CancelQHYCCDExposing, CancelQHYCCDExposingAndReadout, CloseQHYCCD,
     ExpQHYCCDSingleFrame, GetQHYCCDChipInfo, GetQHYCCDEffectiveArea, GetQHYCCDExposureRemaining,
     GetQHYCCDFWVersion, GetQHYCCDId, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
-    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDReadMode,
-    GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion, GetQHYCCDSingleFrame,
-    GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
-    OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode, SetQHYCCDBitsMode,
-    SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution,
-    SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
+    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDParamMinMaxStep,
+    GetQHYCCDReadMode, GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion,
+    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged,
+    IsQHYCCDControlAvailable, OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode,
+    SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode,
+    SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64,
+    QHYCCD_SUCCESS,
 };
 
 #[cfg(test)]
@@ -36,12 +36,13 @@ use crate::mocks::mock_libqhyccd_sys::{
     BeginQHYCCDLive, CancelQHYCCDExposing, CancelQHYCCDExposingAndReadout, CloseQHYCCD,
     ExpQHYCCDSingleFrame, GetQHYCCDChipInfo, GetQHYCCDEffectiveArea, GetQHYCCDExposureRemaining,
     GetQHYCCDFWVersion, GetQHYCCDId, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
-    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDReadMode,
-    GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion, GetQHYCCDSingleFrame,
-    GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
-    OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode, SetQHYCCDBitsMode,
-    SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution,
-    SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
+    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDParamMinMaxStep,
+    GetQHYCCDReadMode, GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion,
+    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged,
+    IsQHYCCDControlAvailable, OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode,
+    SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode,
+    SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64,
+    QHYCCD_SUCCESS,
 };
 
 use thiserror::Error;
@@ -1559,7 +1560,7 @@ impl Camera {
         let mut min: f64 = 0.0;
         let mut max: f64 = 0.0;
         let mut step: f64 = 0.0;
-        match unsafe {
+        let res = unsafe {
             GetQHYCCDParamMinMaxStep(
                 handle,
                 control as u32,
@@ -1567,7 +1568,8 @@ impl Camera {
                 &mut max as *mut f64,
                 &mut step as *mut f64,
             )
-        } {
+        };
+        match res {
             QHYCCD_SUCCESS => Ok((min, max, step)),
             _ => {
                 let error = GetMinMaxStepError { control };

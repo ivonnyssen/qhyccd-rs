@@ -92,6 +92,15 @@ pub mod libqhyccd_sys {
     pub fn GetQHYCCDParam(handle: QhyccdHandle, controlId: u32) -> f64 {
         unimplemented!()
     }
+    pub fn GetQHYCCDParamMinMaxStep(
+        handle: QhyccdHandle,
+        controlId: u32,
+        min: *mut f64,
+        max: *mut f64,
+        step: *mut f64,
+    ) -> u32 {
+        unimplemented!()
+    }
     pub fn SetQHYCCDParam(handle: QhyccdHandle, controlId: u32, value: f64) -> u32 {
         unimplemented!()
     }
