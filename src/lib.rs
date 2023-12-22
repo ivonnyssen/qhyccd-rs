@@ -1560,7 +1560,7 @@ impl Camera {
         let mut min: f64 = 0.0;
         let mut max: f64 = 0.0;
         let mut step: f64 = 0.0;
-        let res = unsafe {
+        match unsafe {
             GetQHYCCDParamMinMaxStep(
                 handle,
                 control as u32,
@@ -1568,8 +1568,7 @@ impl Camera {
                 &mut max as *mut f64,
                 &mut step as *mut f64,
             )
-        };
-        match res {
+        } {
             QHYCCD_SUCCESS => Ok((min, max, step)),
             _ => {
                 let error = GetMinMaxStepError { control };

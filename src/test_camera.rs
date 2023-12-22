@@ -1232,7 +1232,7 @@ fn get_parameter_fail() {
         .withf_st(|handle, control| {
             *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
         })
-        .times(1)
+        .once()
         .return_const_st(QHYCCD_ERROR_F64);
     let cam = new_camera();
     //when
@@ -1256,7 +1256,7 @@ fn get_parameter_min_max_step_success() {
         .withf_st(|handle, control, _min, _max, _step| {
             *handle == TEST_HANDLE && *control == Control::Exposure as u32
         })
-        .times(1)
+        .once()
         .returning_st(|_handle, _control, min, max, step| unsafe {
             *min = 0.0;
             *max = 100.0;
@@ -1269,6 +1269,30 @@ fn get_parameter_min_max_step_success() {
     //then
     assert!(res.is_ok());
     assert_eq!(res.unwrap(), (0.0, 100.0, 0.1));
+}
+
+#[test]
+fn get_parameter_min_max_step_fail() {
+    //given
+    let ctx = GetQHYCCDParamMinMaxStep_context();
+    ctx.expect()
+        .withf_st(|handle, control, _min, _max, _step| {
+            *handle == TEST_HANDLE && *control == Control::Exposure as u32
+        })
+        .once()
+        .return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.get_parameter_min_max_step(Control::Exposure);
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        QHYError::GetMinMaxStepError {
+            control: Control::Exposure
+        }
+        .to_string()
+    );
 }
 
 #[test]
