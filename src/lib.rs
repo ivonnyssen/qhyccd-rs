@@ -436,16 +436,27 @@ pub struct CCDChipArea {
 }
 
 #[derive(Debug, PartialEq)]
+#[allow(missing_docs)]
 /// this struct is returned from `is_control_available` when used with `Control::CamColor`
-pub enum BayerId {
-    ///GBRG
-    BayerGb = 1,
-    ///GRBG
-    BayerGr = 2,
-    ///BGGR
-    BayerBg = 3,
-    ///RGGB
-    BayerRg = 4,
+pub enum BayerMode {
+    GBRG = 1,
+    GRBG = 2,
+    BGGR = 3,
+    RGGB = 4,
+}
+
+impl TryFrom<u32> for BayerMode {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            x if x == BayerMode::GBRG as u32 => Ok(BayerMode::GBRG),
+            x if x == BayerMode::GRBG as u32 => Ok(BayerMode::GRBG),
+            x if x == BayerMode::BGGR as u32 => Ok(BayerMode::BGGR),
+            x if x == BayerMode::RGGB as u32 => Ok(BayerMode::RGGB),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
