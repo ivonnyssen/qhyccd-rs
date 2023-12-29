@@ -11,7 +11,7 @@ Current bindings are not complete, but will grow as functionality is needed for 
 
 ```toml
 [dependencies]
-qhyccd-rs = "0.1.3"
+qhyccd-rs = "0.1.4"
 ```
 
 ## Rust version requirements

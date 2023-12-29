@@ -101,4 +101,11 @@ extern "C" {
     pub fn CancelQHYCCDExposing(handle: QhyccdHandle) -> u32;
     pub fn CancelQHYCCDExposingAndReadout(handle: QhyccdHandle) -> u32;
     pub fn IsQHYCCDCFWPlugged(handle: QhyccdHandle) -> u32;
+    pub fn GetQHYCCDParamMinMaxStep(
+        handle: QhyccdHandle,
+        controlId: u32,
+        min: *mut f64,
+        max: *mut f64,
+        step: *mut f64,
+    ) -> u32;
 }

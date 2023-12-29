@@ -4,13 +4,14 @@ use crate::mocks::mock_libqhyccd_sys::{
     CloseQHYCCD_context, ExpQHYCCDSingleFrame_context, GetQHYCCDChipInfo_context,
     GetQHYCCDEffectiveArea_context, GetQHYCCDExposureRemaining_context, GetQHYCCDFWVersion_context,
     GetQHYCCDLiveFrame_context, GetQHYCCDMemLength_context, GetQHYCCDModel_context,
-    GetQHYCCDNumberOfReadModes_context, GetQHYCCDOverScanArea_context, GetQHYCCDParam_context,
-    GetQHYCCDReadModeName_context, GetQHYCCDReadModeResolution_context, GetQHYCCDReadMode_context,
-    GetQHYCCDSingleFrame_context, GetQHYCCDType_context, InitQHYCCD_context,
-    IsQHYCCDControlAvailable_context, OpenQHYCCD_context, SetQHYCCDBinMode_context,
-    SetQHYCCDBitsMode_context, SetQHYCCDDebayerOnOff_context, SetQHYCCDParam_context,
-    SetQHYCCDReadMode_context, SetQHYCCDResolution_context, SetQHYCCDStreamMode_context,
-    StopQHYCCDLive_context, QHYCCD_SUCCESS,
+    GetQHYCCDNumberOfReadModes_context, GetQHYCCDOverScanArea_context,
+    GetQHYCCDParamMinMaxStep_context, GetQHYCCDParam_context, GetQHYCCDReadModeName_context,
+    GetQHYCCDReadModeResolution_context, GetQHYCCDReadMode_context, GetQHYCCDSingleFrame_context,
+    GetQHYCCDType_context, InitQHYCCD_context, IsQHYCCDControlAvailable_context,
+    OpenQHYCCD_context, SetQHYCCDBinMode_context, SetQHYCCDBitsMode_context,
+    SetQHYCCDDebayerOnOff_context, SetQHYCCDParam_context, SetQHYCCDReadMode_context,
+    SetQHYCCDResolution_context, SetQHYCCDStreamMode_context, StopQHYCCDLive_context,
+    QHYCCD_SUCCESS,
 };
 
 const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_void;
@@ -1231,7 +1232,7 @@ fn get_parameter_fail() {
         .withf_st(|handle, control| {
             *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
         })
-        .times(1)
+        .once()
         .return_const_st(QHYCCD_ERROR_F64);
     let cam = new_camera();
     //when
@@ -1242,6 +1243,53 @@ fn get_parameter_fail() {
         res.err().unwrap().to_string(),
         QHYError::GetParameterError {
             control: Control::CfwSlotsNum
+        }
+        .to_string()
+    );
+}
+
+#[test]
+fn get_parameter_min_max_step_success() {
+    //given
+    let ctx = GetQHYCCDParamMinMaxStep_context();
+    ctx.expect()
+        .withf_st(|handle, control, _min, _max, _step| {
+            *handle == TEST_HANDLE && *control == Control::Exposure as u32
+        })
+        .once()
+        .returning_st(|_handle, _control, min, max, step| unsafe {
+            *min = 0.0;
+            *max = 100.0;
+            *step = 0.1;
+            QHYCCD_SUCCESS
+        });
+    let cam = new_camera();
+    //when
+    let res = cam.get_parameter_min_max_step(Control::Exposure);
+    //then
+    assert!(res.is_ok());
+    assert_eq!(res.unwrap(), (0.0, 100.0, 0.1));
+}
+
+#[test]
+fn get_parameter_min_max_step_fail() {
+    //given
+    let ctx = GetQHYCCDParamMinMaxStep_context();
+    ctx.expect()
+        .withf_st(|handle, control, _min, _max, _step| {
+            *handle == TEST_HANDLE && *control == Control::Exposure as u32
+        })
+        .once()
+        .return_const_st(QHYCCD_ERROR);
+    let cam = new_camera();
+    //when
+    let res = cam.get_parameter_min_max_step(Control::Exposure);
+    //then
+    assert!(res.is_err());
+    assert_eq!(
+        res.err().unwrap().to_string(),
+        QHYError::GetMinMaxStepError {
+            control: Control::Exposure
         }
         .to_string()
     );
@@ -1537,4 +1585,14 @@ fn filter_wheel() {
     let res = cam.positions();
     //then
     assert_eq!(res, 0);
+}
+
+#[test]
+fn bayer_mode_try_from() {
+    assert_eq!(BayerMode::try_from(1).unwrap(), BayerMode::GBRG);
+    assert_eq!(BayerMode::try_from(2).unwrap(), BayerMode::GRBG);
+    assert_eq!(BayerMode::try_from(3).unwrap(), BayerMode::BGGR);
+    assert_eq!(BayerMode::try_from(4).unwrap(), BayerMode::RGGB);
+    assert!(BayerMode::try_from(0).is_err());
+    assert!(BayerMode::try_from(5).is_err());
 }

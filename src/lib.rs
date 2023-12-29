@@ -22,12 +22,13 @@ use libqhyccd_sys::{
     BeginQHYCCDLive, CancelQHYCCDExposing, CancelQHYCCDExposingAndReadout, CloseQHYCCD,
     ExpQHYCCDSingleFrame, GetQHYCCDChipInfo, GetQHYCCDEffectiveArea, GetQHYCCDExposureRemaining,
     GetQHYCCDFWVersion, GetQHYCCDId, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
-    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDReadMode,
-    GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion, GetQHYCCDSingleFrame,
-    GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
-    OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode, SetQHYCCDBitsMode,
-    SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution,
-    SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
+    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDParamMinMaxStep,
+    GetQHYCCDReadMode, GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion,
+    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged,
+    IsQHYCCDControlAvailable, OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode,
+    SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode,
+    SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64,
+    QHYCCD_SUCCESS,
 };
 
 #[cfg(test)]
@@ -35,12 +36,13 @@ use crate::mocks::mock_libqhyccd_sys::{
     BeginQHYCCDLive, CancelQHYCCDExposing, CancelQHYCCDExposingAndReadout, CloseQHYCCD,
     ExpQHYCCDSingleFrame, GetQHYCCDChipInfo, GetQHYCCDEffectiveArea, GetQHYCCDExposureRemaining,
     GetQHYCCDFWVersion, GetQHYCCDId, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
-    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDReadMode,
-    GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion, GetQHYCCDSingleFrame,
-    GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
-    OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode, SetQHYCCDBitsMode,
-    SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution,
-    SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
+    GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDParamMinMaxStep,
+    GetQHYCCDReadMode, GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion,
+    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged,
+    IsQHYCCDControlAvailable, OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode,
+    SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode,
+    SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64,
+    QHYCCD_SUCCESS,
 };
 
 use thiserror::Error;
@@ -130,6 +132,14 @@ pub enum QHYError {
     IsCfwPluggedInError,
     #[error("Error camera is not open")]
     CameraNotOpenError,
+    #[error(
+        "Error getting camera min, max, step for parameter, error code {:?}",
+        control
+    )]
+    GetMinMaxStepError {
+        /// here the control field has the `Control` enum variant we tried to get the value for
+        control: Control,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -378,7 +388,7 @@ pub enum StreamMode {
     LiveMode = 1,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 /// Camera sensor info
 pub struct CCDChipInfo {
     /// chip width in um
@@ -426,16 +436,27 @@ pub struct CCDChipArea {
 }
 
 #[derive(Debug, PartialEq)]
+#[allow(missing_docs)]
 /// this struct is returned from `is_control_available` when used with `Control::CamColor`
-pub enum BayerId {
-    ///GBRG
-    BayerGb = 1,
-    ///GRBG
-    BayerGr = 2,
-    ///BGGR
-    BayerBg = 3,
-    ///RGGB
-    BayerRg = 4,
+pub enum BayerMode {
+    GBRG = 1,
+    GRBG = 2,
+    BGGR = 3,
+    RGGB = 4,
+}
+
+impl TryFrom<u32> for BayerMode {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            x if x == BayerMode::GBRG as u32 => Ok(BayerMode::GBRG),
+            x if x == BayerMode::GRBG as u32 => Ok(BayerMode::GRBG),
+            x if x == BayerMode::BGGR as u32 => Ok(BayerMode::BGGR),
+            x if x == BayerMode::RGGB as u32 => Ok(BayerMode::RGGB),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -1435,7 +1456,7 @@ impl Camera {
         match unsafe { IsQHYCCDControlAvailable(handle, control as u32) } {
             QHYCCD_ERROR => {
                 let error = IsControlAvailableError { control };
-                tracing::error!(error = ?error);
+                tracing::debug!(control = ?error);
                 None
             }
             is_supported => Some(is_supported),
@@ -1519,7 +1540,7 @@ impl Camera {
     /// let sdk = Sdk::new().expect("SDK::new failed");
     /// let camera = sdk.cameras().last().expect("no camera found");
     /// camera.open().expect("open failed");
-    /// let number_of_filter_wheel_positions = match camera.is_control_available(Control::CfwSlotsNum).is_ok() {
+    /// let number_of_filter_wheel_positions = match camera.is_control_available(Control::CfwSlotsNum).is_some() {
     ///     true => camera.get_parameter(Control::CfwSlotsNum).unwrap_or_default() as u32,
     ///     false => 0,
     /// };
@@ -1533,6 +1554,38 @@ impl Camera {
             Err(eyre!(error))
         } else {
             Ok(res)
+        }
+    }
+
+    /// Returns the min, max and step value for a given control
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,Camera,Control};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let camera = sdk.cameras().last().expect("no camera found");
+    /// camera.open().expect("open failed");
+    /// let (min_exposure, max_exposure, exposure_resolution) = camera.get_parameter_min_max_step(Control::Exposure).expect("getting min,max,step failed");
+    /// ```
+    pub fn get_parameter_min_max_step(&self, control: Control) -> Result<(f64, f64, f64)> {
+        let handle = read_lock!(self.handle, GetMinMaxStepError { control })?;
+        let mut min: f64 = 0.0;
+        let mut max: f64 = 0.0;
+        let mut step: f64 = 0.0;
+        match unsafe {
+            GetQHYCCDParamMinMaxStep(
+                handle,
+                control as u32,
+                &mut min as *mut f64,
+                &mut max as *mut f64,
+                &mut step as *mut f64,
+            )
+        } {
+            QHYCCD_SUCCESS => Ok((min, max, step)),
+            _ => {
+                let error = GetMinMaxStepError { control };
+                tracing::error!(error = ?error);
+                Err(eyre!(error))
+            }
         }
     }
 

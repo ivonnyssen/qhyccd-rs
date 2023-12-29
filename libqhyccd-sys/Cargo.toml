@@ -1,16 +1,14 @@
 [package]
 name = "libqhyccd-sys"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Igor von Nyssen <igor@vonnyssen.com>"]
 links = "qhyccd"
 repository = "https://github.com/ivonnyssen/qhyccd-rs"
 license = "MIT OR Apache-2.0"
 description = "Rust bindings for libqhyccd"
 edition = "2021"
-rust-version = "1.64.0" # for std::ffi::c_char
-exclude = [
-    "qhyccd-sdk/*"
-]
+rust-version = "1.64.0"                                # for std::ffi::c_char
+exclude = ["qhyccd-sdk/*"]
 
 [lib]
 name = "libqhyccd_sys"
@@ -21,3 +19,4 @@ path = "lib.rs"
 [features]
 #will use the libqhyccd included in this crate - SDK version 23.09.06
 vendored = []
+
