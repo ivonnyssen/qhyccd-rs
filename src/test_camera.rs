@@ -1586,3 +1586,13 @@ fn filter_wheel() {
     //then
     assert_eq!(res, 0);
 }
+
+#[test]
+fn bayer_mode_try_from() {
+    assert_eq!(BayerMode::try_from(1).unwrap(), BayerMode::GBRG);
+    assert_eq!(BayerMode::try_from(2).unwrap(), BayerMode::GRBG);
+    assert_eq!(BayerMode::try_from(3).unwrap(), BayerMode::BGGR);
+    assert_eq!(BayerMode::try_from(4).unwrap(), BayerMode::RGGB);
+    assert!(BayerMode::try_from(0).is_err());
+    assert!(BayerMode::try_from(5).is_err());
+}
