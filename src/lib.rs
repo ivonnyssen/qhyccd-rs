@@ -1761,15 +1761,21 @@ unsafe impl Sync for Camera {}
 
 /// Filter wheels are directly connected to the QHY camera and can be controlled through the camera
 pub trait FilterWheel: Debug {
+    /// Opens the filter wheel
     fn open(&self) -> Result<()>;
+    /// Closes the filter wheel
     fn close(&self) -> Result<()>;
+    /// Returns `true` if the filter wheel is open
     fn is_open(&self) -> Result<bool>;
     /// Returns the number of filter positions of the filter wheel
     fn get_number_of_filters(&self) -> Option<u32>;
+    /// Returns the current filter position
     fn get_fw_position(&self) -> Result<u32>;
+    /// Sets the filter position
     fn set_fw_position(&self, position: u32) -> Result<()>;
 }
 
+#[allow(unused_unsafe)]
 impl FilterWheel for Camera {
     /// Opens a filter wheel with the given id. The SDK automatically finds all connected filter wheels upon initialization
     /// but does not call open on the filter wheel. You have to call open on the filter wheel you want to use. Calling open
