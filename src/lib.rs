@@ -1,14 +1,15 @@
 //!
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
-use std::ffi::c_char;
-use std::ffi::CStr;
+use std::ffi::{c_char, CStr};
+use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::RwLock;
 
 use eyre::eyre;
 use eyre::Result;
 use eyre::WrapErr;
+use tracing::error;
 
 use crate::QHYError::*;
 #[macro_use]
@@ -140,6 +141,14 @@ pub enum QHYError {
         /// here the control field has the `Control` enum variant we tried to get the value for
         control: Control,
     },
+    #[error("Error getting filter wheel position, error code {:?}", error_code)]
+    GetCfwPositionError { error_code: u32 },
+    #[error("Error setting filter wheel position")]
+    SetCfwPositionError,
+    #[error("Error opening the filter wheel")]
+    OpenFilterWheelError,
+    #[error("Error closing the filter wheel error code {:?}", error_code)]
+    CloseFilterWheelError { error_code: u32 },
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -550,27 +559,30 @@ impl Sdk {
                     }?;
                     let camera = Camera::new(id.clone());
                     match camera.open() {
-                        Ok(_) => (),
+                        Ok(_) => match camera.is_cfw_plugged_in() {
+                            Ok(true) => {
+                                tracing::trace!("Camera {} reporting a filter wheel", id);
+                                filter_wheels.push(camera.clone())
+                            }
+                            Ok(false) => {
+                                tracing::trace!("Camera {} has no filter wheel", id)
+                            }
+                            Err(error) => {
+                                tracing::error!(error = ?error);
+                            }
+                        },
                         Err(error) => {
                             tracing::error!(error = ?error);
                             continue;
-                        }
-                    }
-                    match camera.is_cfw_plugged_in() {
-                        Ok(true) => {
-                            filter_wheels.push(camera.clone());
-                        }
-                        Ok(false) => (),
-                        Err(error) => {
-                            tracing::error!(error = ?error);
                         }
                     }
                     match camera.close() {
                         Ok(_) => (),
                         Err(error) => {
                             tracing::error!(error = ?error);
+                            continue;
                         }
-                    };
+                    }
                     cameras.push(camera);
                 }
 
@@ -1748,17 +1760,140 @@ unsafe impl Send for Camera {}
 unsafe impl Sync for Camera {}
 
 /// Filter wheels are directly connected to the QHY camera and can be controlled through the camera
-pub trait FilterWheel {
+pub trait FilterWheel: Debug {
+    fn open(&self) -> Result<()>;
+    fn close(&self) -> Result<()>;
+    fn is_open(&self) -> Result<bool>;
     /// Returns the number of filter positions of the filter wheel
-    fn positions(&self) -> u32;
+    fn get_number_of_filters(&self) -> Option<u32>;
+    fn get_fw_position(&self) -> Result<u32>;
+    fn set_fw_position(&self, position: u32) -> Result<()>;
 }
 
 impl FilterWheel for Camera {
-    fn positions(&self) -> u32 {
-        match self.is_control_available(Control::CfwSlotsNum) {
-            Some(_) => self.get_parameter(Control::CfwSlotsNum).unwrap_or_default() as u32,
-            None => 0,
+    /// Opens a filter wheel with the given id. The SDK automatically finds all connected filter wheels upon initialization
+    /// but does not call open on the filter wheel. You have to call open on the filter wheel you want to use. Calling open
+    /// on a filter wheel that is already open does not do anything.
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.filter_wheels().last().expect("no filter wheel found");
+    /// fw.open().expect("open failed");
+    /// ```
+    fn open(&self) -> Result<()> {
+        if self.is_open()? {
+            return Ok(());
         }
+        // read and see if the handle is already Some(_)
+        let mut lock = self.handle.write().map_err(|err| {
+            tracing::error!(error=?err);
+            eyre!("Could not acquire write lock on camera handle")
+        })?;
+        unsafe {
+            match std::ffi::CString::new(self.id.clone()) {
+                Ok(c_id) => {
+                    let handle = OpenQHYCCD(c_id.as_ptr());
+                    if handle.is_null() {
+                        let error = OpenFilterWheelError;
+                        tracing::error!(error = ?error);
+                        return Err(eyre!(error));
+                    }
+                    *lock = Some(QHYCCDHandle { ptr: handle });
+                    Ok(())
+                }
+                Err(error) => {
+                    tracing::error!(error = ?error);
+                    Err(eyre!(error))
+                }
+            }
+        }
+    }
+
+    /// Closes the filter wheel. If you have to call this function, you can then open the filter
+    /// wheel again by calling `open`. Calling close on a filter wheel that is not open does not do anything.
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.filter_wheels().last().expect("no camera found");
+    /// fw.open().expect("open failed");
+    /// fw.close().expect("close failed");
+    /// ```
+    fn close(&self) -> Result<()> {
+        if !self.is_open()? {
+            return Ok(());
+        }
+        let mut lock = self.handle.write().map_err(|err| {
+            tracing::error!(error=?err);
+            eyre!("Could not acquire write lock on camera handle")
+        })?;
+
+        match *lock {
+            Some(handle) => match unsafe { CloseQHYCCD(handle.ptr) } {
+                QHYCCD_SUCCESS => {
+                    lock.take();
+                    Ok(())
+                }
+                error_code => {
+                    let error = CloseFilterWheelError { error_code };
+                    tracing::error!(error = ?error);
+                    Err(eyre!(error))
+                }
+            },
+            None => Ok(()),
+        }
+    }
+
+    /// Returns `true` if the filter wheel is open
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.cameras().last().expect("no camera found"); // this does not open the camera
+    /// fw.open().expect("open failed");
+    /// let is_open = fw.is_open();
+    /// println!("Is filter wheel open: {:?}", is_open);
+    /// ```
+    fn is_open(&self) -> Result<bool> {
+        let lock = self.handle.read().map_err(|err| {
+            tracing::error!(error=?err);
+            eyre!("Could not acquire read lock on camera handle")
+        })?;
+        Ok((*lock).is_some())
+    }
+    fn get_number_of_filters(&self) -> Option<u32> {
+        match self.is_control_available(Control::CfwSlotsNum) {
+            Some(_) => self.get_parameter(Control::CfwSlotsNum).map_or_else(
+                |e| {
+                    error!(?e, "could not get number of filters from camera");
+                    None
+                },
+                |num| Some(num as u32),
+            ),
+            None => None,
+        }
+    }
+
+    fn get_fw_position(&self) -> Result<u32> {
+        let _handle = read_lock!(self.handle, GetCfwPositionError { error_code: 0 })?;
+        match self.get_parameter(Control::CfwPort) {
+            Ok(position) => Ok((position - 48_f64) as u32),
+            Err(error) => {
+                tracing::error!(error = ?error);
+                Err(eyre!(error))
+            }
+        }
+    }
+
+    fn set_fw_position(&self, position: u32) -> Result<()> {
+        let _handle = read_lock!(self.handle, SetCfwPositionError)?;
+        self.set_parameter(Control::CfwPort, (position + 48_u32) as f64)
+            .map_err(|_| {
+                let error = SetCfwPositionError;
+                tracing::error!(error = ?error);
+                eyre!(error)
+            })
     }
 }
 

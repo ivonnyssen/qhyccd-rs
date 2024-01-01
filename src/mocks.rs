@@ -195,4 +195,10 @@ pub mod libqhyccd_sys {
     pub fn IsQHYCCDCFWPlugged(handle: QhyccdHandle) -> u32 {
         unimplemented!()
     }
+    pub fn GetQHYCCDCFWStatus(handle: QhyccdHandle, status: *mut c_char) -> u32 {
+        unimplemented!()
+    }
+    pub fn SendOrder2QHYCCDCFW(handle: QhyccdHandle, order: *const c_char, length: u32) -> u32 {
+        unimplemented!()
+    }
 }

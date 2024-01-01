@@ -1,4 +1,5 @@
-use qhyccd_rs::{Sdk, StreamMode};
+use qhyccd_rs::FilterWheel;
+use qhyccd_rs::Sdk;
 use tracing::trace;
 use tracing_subscriber::FmtSubscriber;
 
@@ -14,40 +15,21 @@ fn main() {
     let sdk_version = sdk.version().expect("get_sdk_version failed");
     trace!(sdk_version = ?sdk_version);
 
-    let camera1 = sdk.cameras().last().expect("no camera found").clone();
-    trace!(camera = ?camera1);
-    let camera2 = sdk.cameras().last().expect("no camera found").clone();
-    trace!(camera = ?camera2);
+    let camera = sdk.filter_wheels().last().expect("no camera found");
+    trace!(camera = ?camera);
 
-    camera1.open().expect("open_camera failed");
-    trace!(camera1_open = ?camera1.is_open());
-    trace!(camera2_open = ?camera2.is_open());
+    camera.open().expect("open_camera failed");
+    trace!(camera_open = ?camera.is_open());
 
-    camera2.close().expect("camera close failed");
-    trace!(camera1_open = ?camera1.is_open());
-    trace!(camera2_open = ?camera2.is_open());
+    let res = camera
+        .get_number_of_filters()
+        .expect("get_number_of_filters failed");
+    trace!(get_number_of_filters = ?res);
 
-    camera1
-        .set_stream_mode(StreamMode::SingleFrameMode)
-        .expect("set_camera_stream_mode failed");
-    trace!(set_camera_stream_mode = ?StreamMode::SingleFrameMode);
+    camera.set_fw_position(5).expect("set_fw_position failed");
 
-    camera1
-        .set_readout_mode(0)
-        .expect("set_camera_read_mode failed");
-    trace!(set_camera_read_mode = 0);
-
-    camera1.init().expect("init_camera failed");
-
-    let number_of_readout_modes = camera1.get_number_of_readout_modes().unwrap();
-    trace!(number_of_readout_modes = ?number_of_readout_modes);
-    for i in 0..number_of_readout_modes {
-        let name = camera1.get_readout_mode_name(i).unwrap();
-        println!("{}: {}", i, name);
-        let resolution = camera1.get_readout_mode_resolution(i).unwrap();
-        println!("{}: {}, {}", i, resolution.0, resolution.1);
+    loop {
+        let res = camera.get_fw_position().expect("get_cfw_status failed");
+        trace!(get_cfw_status = ?res);
     }
-
-    let read_out_mode = camera1.get_readout_mode().expect("get_readout_mode failed");
-    trace!(read_out_mode = ?read_out_mode);
 }

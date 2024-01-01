@@ -282,7 +282,7 @@ fn new_with_broken_filter_wheel() {
         .expect()
         .times(1)
         .returning_st(|handle| match handle {
-            ADDR1 => 12345, //garbage return value
+            ADDR1 => 12345, //neither SUCCESS nor ERROR, so Err() is returned
             _ => panic!("invalid handle"),
         });
     let ctx_close = CloseQHYCCD_context();
@@ -290,7 +290,7 @@ fn new_with_broken_filter_wheel() {
         .expect()
         .times(1)
         .returning_st(|handle| match handle {
-            ADDR1 => QHYCCD_ERROR,
+            ADDR1 => QHYCCD_SUCCESS,
             _ => panic!("invalid handle"),
         });
     let ctx_release = ReleaseQHYCCDResource_context();

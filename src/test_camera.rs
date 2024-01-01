@@ -1551,9 +1551,9 @@ fn filter_wheel() {
 
     let cam = new_camera();
     //when
-    let res = cam.positions();
+    let res = cam.get_number_of_filters();
     //then
-    assert_eq!(res, 7);
+    assert_eq!(res, Some(7));
 
     //given
     let ctx_available = IsQHYCCDControlAvailable_context();
@@ -1567,9 +1567,9 @@ fn filter_wheel() {
 
     let cam = new_camera();
     //when
-    let res = cam.positions();
+    let res = cam.get_number_of_filters();
     //then
-    assert_eq!(res, 0);
+    assert_eq!(res, None);
 
     //given
     let ctx_available = IsQHYCCDControlAvailable_context();
@@ -1582,9 +1582,9 @@ fn filter_wheel() {
         .return_const_st(QHYCCD_ERROR);
     let cam = new_camera();
     //when
-    let res = cam.positions();
+    let res = cam.get_number_of_filters();
     //then
-    assert_eq!(res, 0);
+    assert_eq!(res, None);
 }
 
 #[test]
