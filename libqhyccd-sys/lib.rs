@@ -108,4 +108,6 @@ extern "C" {
         max: *mut f64,
         step: *mut f64,
     ) -> u32;
+    pub fn GetQHYCCDCFWStatus(handle: QhyccdHandle, status: *mut c_char) -> u32;
+    pub fn SendOrder2QHYCCDCFW(handle: QhyccdHandle, order: *const c_char, length: u32) -> u32;
 }
