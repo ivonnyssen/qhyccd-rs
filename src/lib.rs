@@ -146,6 +146,8 @@ pub enum QHYError {
     OpenFilterWheelError,
     #[error("Error closing the filter wheel error code {:?}", error_code)]
     CloseFilterWheelError { error_code: u32 },
+    #[error("Error getting the number of filters")]
+    GetNumberOfFiltersError,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -1783,6 +1785,18 @@ impl FilterWheel {
         Self { camera }
     }
 
+    /// Returns the id of the filter wheel
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.filter_wheels().last().expect("no filter wheel found");
+    /// println!("Filter wheel id: {}", fw.id());
+    /// ```
+    pub fn id(&self) -> &str {
+        self.camera.id()
+    }
+
     /// Opens the filter wheel
     /// # Example
     /// ```no_run
@@ -1846,18 +1860,18 @@ impl FilterWheel {
     /// let number_of_filters = fw.get_number_of_filters().expect("get_number_of_filters failed");
     /// println!("Number of filters: {}", number_of_filters);
     /// ```
-    pub fn get_number_of_filters(&self) -> Option<u32> {
+    pub fn get_number_of_filters(&self) -> Result<u32> {
         match self.camera.is_control_available(Control::CfwSlotsNum) {
             Some(_) => self.camera.get_parameter(Control::CfwSlotsNum).map_or_else(
                 |e| {
                     error!(?e, "could not get number of filters from camera");
-                    None
+                    Err(e)
                 },
-                |num| Some(num as u32),
+                |num| Ok(num as u32),
             ),
             None => {
-                tracing::debug!("No filter wheel plugged in.");
-                None
+                tracing::debug!("I'm a filter wheel without filters. :(");
+                Err(eyre!(GetNumberOfFiltersError))
             }
         }
     }

@@ -22,6 +22,7 @@ fn open_success() {
     let res = fw.open();
     //then
     assert!(res.is_ok());
+    assert_eq!(fw.id(), "test_camera");
 }
 
 #[test]
@@ -131,7 +132,7 @@ fn get_number_of_filters_success() {
     //when
     let res = fw.get_number_of_filters();
     //then
-    assert_eq!(res, Some(7));
+    assert_eq!(res.unwrap(), 7);
 }
 
 #[test]
@@ -149,7 +150,7 @@ fn get_number_of_filters_fail_no_filter_wheel() {
     //when
     let res = fw.get_number_of_filters();
     //then
-    assert_eq!(res, None);
+    assert!(res.is_err());
 }
 
 #[test]
@@ -175,7 +176,7 @@ fn get_number_of_filters_fail_get_parameter() {
     //when
     let res = fw.get_number_of_filters();
     //then
-    assert_eq!(res, None);
+    assert!(res.is_err());
 }
 
 #[test]
