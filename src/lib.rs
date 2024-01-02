@@ -4,12 +4,9 @@
 use std::ffi::{c_char, CStr};
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
-use std::sync::Arc;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
-use eyre::eyre;
-use eyre::Result;
-use eyre::WrapErr;
+use eyre::{eyre, Result, WrapErr};
 use tracing::error;
 
 use crate::QHYError::*;
