@@ -1439,6 +1439,7 @@ fn open_success() {
     let res = cam.open();
     //then
     assert!(res.is_ok());
+    assert_eq!(cam.id(), "test_camera".to_owned());
 }
 
 #[test]
