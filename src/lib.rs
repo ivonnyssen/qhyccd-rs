@@ -3,7 +3,6 @@
 
 use std::ffi::{c_char, CStr};
 use std::fmt::Debug;
-use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock};
 
 use eyre::{eyre, Result, WrapErr};
@@ -684,27 +683,6 @@ pub struct Camera {
     id: String,
     #[educe(PartialEq(ignore))]
     handle: Arc<RwLock<Option<QHYCCDHandle>>>,
-}
-
-#[derive(Educe)]
-#[educe(Debug, Clone, PartialEq)]
-/// The representation of a filter wheel. It is constructed by the SDK and can be used to
-/// interact with the filter wheel - every filter wheel is always plugged into a camera.
-pub struct FilterWheel {
-    camera: Camera,
-}
-
-impl Deref for FilterWheel {
-    type Target = Camera;
-    fn deref(&self) -> &Self::Target {
-        &self.camera
-    }
-}
-
-impl DerefMut for FilterWheel {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.camera
-    }
 }
 
 macro_rules! read_lock {
@@ -1782,6 +1760,14 @@ impl Camera {
 unsafe impl Send for Camera {}
 unsafe impl Sync for Camera {}
 
+#[derive(Educe)]
+#[educe(Debug, Clone, PartialEq)]
+/// The representation of a filter wheel. It is constructed by the SDK and can be used to
+/// interact with the filter wheel - every filter wheel is always plugged into a camera.
+pub struct FilterWheel {
+    camera: Camera,
+}
+
 /// Filter wheels are directly connected to the QHY camera and can be controlled through the camera
 #[allow(unused_unsafe)]
 impl FilterWheel {
@@ -1797,6 +1783,45 @@ impl FilterWheel {
         Self { camera }
     }
 
+    /// Opens the filter wheel
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.filter_wheels().last().expect("no filter wheel found");
+    /// fw.open().expect("open failed");
+    /// ```
+    pub fn open(&self) -> Result<()> {
+        self.camera.open()
+    }
+
+    /// Returns `true` if the filter wheel is open
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.filter_wheels().last().expect("no filter wheel found");
+    /// fw.open().expect("open failed");
+    /// let is_open = fw.is_open();
+    /// println!("Is filter wheel open: {:?}", is_open);
+    /// ```
+    pub fn is_open(&self) -> Result<bool> {
+        self.camera.is_open()
+    }
+
+    /// Closes the filter wheel
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.filter_wheels().last().expect("no filter wheel found");
+    /// fw.open().expect("open failed");
+    /// fw.close().expect("close failed");
+    /// ```
+    pub fn close(&self) -> Result<()> {
+        self.camera.close()
+    }
+
     /// Returns the number of filters in the filter wheel
     /// # Example
     /// ```no_run
@@ -1808,8 +1833,8 @@ impl FilterWheel {
     /// println!("Number of filters: {}", number_of_filters);
     /// ```
     pub fn get_number_of_filters(&self) -> Option<u32> {
-        match self.is_control_available(Control::CfwSlotsNum) {
-            Some(_) => self.get_parameter(Control::CfwSlotsNum).map_or_else(
+        match self.camera.is_control_available(Control::CfwSlotsNum) {
+            Some(_) => self.camera.get_parameter(Control::CfwSlotsNum).map_or_else(
                 |e| {
                     error!(?e, "could not get number of filters from camera");
                     None
@@ -1834,8 +1859,8 @@ impl FilterWheel {
     /// println!("Current position: {}", current_position);
     /// ```
     pub fn get_fw_position(&self) -> Result<u32> {
-        match self.is_control_available(Control::CfwPort) {
-            Some(_) => match self.get_parameter(Control::CfwPort) {
+        match self.camera.is_control_available(Control::CfwPort) {
+            Some(_) => match self.camera.get_parameter(Control::CfwPort) {
                 //the parameter uses ASCII values to represent the position
                 Ok(position) => Ok((position - 48_f64) as u32), //removing ASCII offset
                 Err(error) => {
@@ -1860,9 +1885,10 @@ impl FilterWheel {
     /// fw.set_fw_position(1).expect("set_fw_position failed");
     /// ```
     pub fn set_fw_position(&self, position: u32) -> Result<()> {
-        match self.is_control_available(Control::CfwPort) {
+        match self.camera.is_control_available(Control::CfwPort) {
             //the parameter uses ASCII values to represent the position
             Some(_) => self
+                .camera
                 .set_parameter(Control::CfwPort, (position + 48_u32) as f64) //adding ASCII offset
                 .map_err(|_| {
                     let error = SetCfwPositionError;
