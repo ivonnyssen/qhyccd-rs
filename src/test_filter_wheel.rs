@@ -1,7 +1,7 @@
 use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
-    CloseQHYCCD_context, GetQHYCCDParam_context, IsQHYCCDControlAvailable_context,
-    OpenQHYCCD_context, SetQHYCCDParam_context, QHYCCD_SUCCESS,
+    CloseQHYCCD_context, GetQHYCCDParam_context, IsQHYCCDCFWPlugged_context,
+    IsQHYCCDControlAvailable_context, OpenQHYCCD_context, SetQHYCCDParam_context, QHYCCD_SUCCESS,
 };
 
 const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_void;
@@ -74,6 +74,38 @@ fn close_success() {
     let res = fw.close();
     //then
     assert!(res.is_ok());
+}
+
+#[test]
+fn is_cfw_plugged_in_true() {
+    //given
+    let ctx_available = IsQHYCCDCFWPlugged_context();
+    ctx_available
+        .expect()
+        .withf_st(|handle| *handle == TEST_HANDLE)
+        .once()
+        .return_const_st(QHYCCD_SUCCESS);
+    let fw = new_filter_wheel();
+    //when
+    let res = fw.is_cfw_plugged_in();
+    //then
+    assert!(res.unwrap());
+}
+
+#[test]
+fn is_cfw_plugged_in_false() {
+    //given
+    let ctx_available = IsQHYCCDCFWPlugged_context();
+    ctx_available
+        .expect()
+        .withf_st(|handle| *handle == TEST_HANDLE)
+        .once()
+        .return_const_st(QHYCCD_ERROR);
+    let fw = new_filter_wheel();
+    //when
+    let res = fw.is_cfw_plugged_in();
+    //then
+    assert!(!res.unwrap());
 }
 
 #[test]

@@ -1809,6 +1809,20 @@ impl FilterWheel {
         self.camera.is_open()
     }
 
+    /// Returns `true` if the filter wheel is plugged into the camera
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::{Sdk,FilterWheel};
+    /// let sdk = Sdk::new().expect("SDK::new failed");
+    /// let fw = sdk.filter_wheels().last().expect("no filter wheel found");
+    /// fw.open().expect("open failed");
+    /// let is_cfw_plugged_in = fw.is_cfw_plugged_in().expect("is_cfw_plugged_in failed");
+    /// println!("Is filter wheel plugged in: {}", is_cfw_plugged_in);
+    /// ```
+    pub fn is_cfw_plugged_in(&self) -> Result<bool> {
+        self.camera.is_cfw_plugged_in()
+    }
+
     /// Closes the filter wheel
     /// # Example
     /// ```no_run
