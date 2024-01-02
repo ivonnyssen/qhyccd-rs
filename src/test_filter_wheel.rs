@@ -1,17 +1,7 @@
 use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
-    BeginQHYCCDLive_context, CancelQHYCCDExposingAndReadout_context, CancelQHYCCDExposing_context,
-    CloseQHYCCD_context, ExpQHYCCDSingleFrame_context, GetQHYCCDChipInfo_context,
-    GetQHYCCDEffectiveArea_context, GetQHYCCDExposureRemaining_context, GetQHYCCDFWVersion_context,
-    GetQHYCCDLiveFrame_context, GetQHYCCDMemLength_context, GetQHYCCDModel_context,
-    GetQHYCCDNumberOfReadModes_context, GetQHYCCDOverScanArea_context,
-    GetQHYCCDParamMinMaxStep_context, GetQHYCCDParam_context, GetQHYCCDReadModeName_context,
-    GetQHYCCDReadModeResolution_context, GetQHYCCDReadMode_context, GetQHYCCDSingleFrame_context,
-    GetQHYCCDType_context, InitQHYCCD_context, IsQHYCCDCFWPlugged_context,
-    IsQHYCCDControlAvailable_context, OpenQHYCCD_context, SetQHYCCDBinMode_context,
-    SetQHYCCDBitsMode_context, SetQHYCCDDebayerOnOff_context, SetQHYCCDParam_context,
-    SetQHYCCDReadMode_context, SetQHYCCDResolution_context, SetQHYCCDStreamMode_context,
-    StopQHYCCDLive_context, QHYCCD_SUCCESS,
+    GetQHYCCDParam_context, IsQHYCCDControlAvailable_context, OpenQHYCCD_context,
+    SetQHYCCDParam_context, QHYCCD_SUCCESS,
 };
 
 const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_void;

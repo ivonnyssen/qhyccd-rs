@@ -340,7 +340,9 @@ fn new_fail_close() {
             _ => panic!("invalid handle"),
         });
     let ctx_close = CloseQHYCCD_context();
-    ctx_close.expect().times(1).return_const_st(QHYCCD_ERROR);
+    ctx_close.expect().once().return_const_st(QHYCCD_ERROR);
+    let ctx_release = ReleaseQHYCCDResource_context();
+    ctx_release.expect().return_const_st(QHYCCD_SUCCESS);
     //when
     let sdk = Sdk::new().unwrap();
     //then

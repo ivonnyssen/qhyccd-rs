@@ -560,11 +560,12 @@ impl Sdk {
                         }
                     }?;
                     let camera = Camera::new(id.clone());
+                    let mut has_filter_wheel = false;
                     match camera.open() {
                         Ok(_) => match camera.is_cfw_plugged_in() {
                             Ok(true) => {
                                 tracing::trace!("Camera {} reporting a filter wheel", id);
-                                filter_wheels.push(FilterWheel::new(Camera::new(id)));
+                                has_filter_wheel = true;
                             }
                             Ok(false) => {
                                 tracing::trace!("Camera {} has no filter wheel", id)
@@ -585,6 +586,9 @@ impl Sdk {
                             continue;
                         }
                     }
+                    if has_filter_wheel {
+                        filter_wheels.push(FilterWheel::new(Camera::new(id)))
+                    };
                     cameras.push(camera);
                 }
 
@@ -1789,8 +1793,8 @@ impl FilterWheel {
     /// a filter wheek manually should only be needed for rare cases.
     /// # Example
     /// ```no_run
-    /// use qhyccd_rs::{Sdk, FilterWheel}
-    /// let fw = FilterWheel::new("filter wheel id from sdk".to_string());
+    /// use qhyccd_rs::{Sdk, Camera, FilterWheel};
+    /// let fw = FilterWheel::new(Camera::new("filter wheel id from sdk".to_string()));
     /// println!("FilterWheel: {:?}", fw);
     /// ```
     pub fn new(camera: Camera) -> Self {
