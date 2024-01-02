@@ -1,7 +1,7 @@
 use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
-    GetQHYCCDParam_context, IsQHYCCDControlAvailable_context, OpenQHYCCD_context,
-    SetQHYCCDParam_context, QHYCCD_SUCCESS,
+    CloseQHYCCD_context, GetQHYCCDParam_context, IsQHYCCDControlAvailable_context,
+    OpenQHYCCD_context, SetQHYCCDParam_context, QHYCCD_SUCCESS,
 };
 
 const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_void;
@@ -13,6 +13,69 @@ fn new_filter_wheel() -> FilterWheel {
     camera.open().unwrap();
     FilterWheel::new(camera)
 }
+
+#[test]
+fn open_success() {
+    //given
+    let fw = new_filter_wheel();
+    //when
+    let res = fw.open();
+    //then
+    assert!(res.is_ok());
+}
+
+#[test]
+fn open_fail() {
+    //given
+    let ctx_open = OpenQHYCCD_context();
+    ctx_open.expect().times(1).return_const_st(std::ptr::null());
+    let camera = Camera::new("test_camera".to_owned());
+    let fw = FilterWheel::new(camera);
+    //when
+    let res = fw.open();
+    //then
+    assert!(res.is_err());
+}
+
+#[test]
+fn is_open_true() {
+    //given
+    let fw = new_filter_wheel();
+    //when
+    let res = fw.is_open();
+    //then
+    assert!(res.unwrap());
+}
+
+#[test]
+fn is_open_false() {
+    //given
+    let camera = Camera::new("test_camera".to_owned());
+    let fw = FilterWheel::new(camera);
+    //when
+    let res = fw.is_open();
+    //then
+    assert!(!res.unwrap());
+}
+
+#[test]
+fn close_success() {
+    //given
+    let ctx_open = OpenQHYCCD_context();
+    ctx_open.expect().once().return_const_st(TEST_HANDLE);
+    let ctx_close = CloseQHYCCD_context();
+    ctx_close.expect().once().return_const_st(QHYCCD_SUCCESS);
+    let camera = Camera::new("test_camera".to_owned());
+    let fw = FilterWheel::new(camera);
+    //when
+    let res = fw.open();
+    assert!(res.is_ok());
+
+    let res = fw.close();
+    //then
+    assert!(res.is_ok());
+}
+
 #[test]
 fn get_number_of_filters_success() {
     //given
