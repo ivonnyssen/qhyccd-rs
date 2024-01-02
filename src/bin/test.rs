@@ -1,4 +1,3 @@
-use qhyccd_rs::FilterWheel;
 use qhyccd_rs::Sdk;
 use tracing::trace;
 use tracing_subscriber::FmtSubscriber;
@@ -15,21 +14,25 @@ fn main() {
     let sdk_version = sdk.version().expect("get_sdk_version failed");
     trace!(sdk_version = ?sdk_version);
 
-    let camera = sdk.filter_wheels().last().expect("no camera found");
-    trace!(camera = ?camera);
+    let filter_wheel = sdk.filter_wheels().last().expect("no filter_wheel found");
+    trace!(filter_wheel = ?filter_wheel);
 
-    camera.open().expect("open_camera failed");
-    trace!(camera_open = ?camera.is_open());
+    filter_wheel.open().expect("open_filter_wheel failed");
+    trace!(filter_wheel_open = ?filter_wheel.is_open());
 
-    let res = camera
+    let res = filter_wheel
         .get_number_of_filters()
         .expect("get_number_of_filters failed");
     trace!(get_number_of_filters = ?res);
 
-    camera.set_fw_position(5).expect("set_fw_position failed");
+    filter_wheel
+        .set_fw_position(5)
+        .expect("set_fw_position failed");
 
     loop {
-        let res = camera.get_fw_position().expect("get_cfw_status failed");
+        let res = filter_wheel
+            .get_fw_position()
+            .expect("get_cfw_status failed");
         trace!(get_cfw_status = ?res);
     }
 }
