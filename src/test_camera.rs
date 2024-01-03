@@ -1439,6 +1439,7 @@ fn open_success() {
     let res = cam.open();
     //then
     assert!(res.is_ok());
+    assert_eq!(cam.id(), "test_camera".to_owned());
 }
 
 #[test]
@@ -1527,64 +1528,6 @@ fn close_fail() {
         }
         .to_string()
     );
-}
-
-#[test]
-fn filter_wheel() {
-    //given
-    let ctx_available = IsQHYCCDControlAvailable_context();
-    ctx_available
-        .expect()
-        .withf_st(|handle, control| {
-            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
-        })
-        .times(1)
-        .return_const_st(QHYCCD_SUCCESS);
-    let ctx_num = GetQHYCCDParam_context();
-    ctx_num
-        .expect()
-        .withf_st(|handle, control| {
-            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
-        })
-        .times(1)
-        .return_const_st(7.0);
-
-    let cam = new_camera();
-    //when
-    let res = cam.positions();
-    //then
-    assert_eq!(res, 7);
-
-    //given
-    let ctx_available = IsQHYCCDControlAvailable_context();
-    ctx_available
-        .expect()
-        .withf_st(|handle, control| {
-            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
-        })
-        .times(1)
-        .return_const_st(QHYCCD_ERROR);
-
-    let cam = new_camera();
-    //when
-    let res = cam.positions();
-    //then
-    assert_eq!(res, 0);
-
-    //given
-    let ctx_available = IsQHYCCDControlAvailable_context();
-    ctx_available
-        .expect()
-        .withf_st(|handle, control| {
-            *handle == TEST_HANDLE && *control == Control::CfwSlotsNum as u32
-        })
-        .times(1)
-        .return_const_st(QHYCCD_ERROR);
-    let cam = new_camera();
-    //when
-    let res = cam.positions();
-    //then
-    assert_eq!(res, 0);
 }
 
 #[test]

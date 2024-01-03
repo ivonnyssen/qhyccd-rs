@@ -1,6 +1,6 @@
 [package]
 name = "libqhyccd-sys"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Igor von Nyssen <igor@vonnyssen.com>"]
 links = "qhyccd"
 repository = "https://github.com/ivonnyssen/qhyccd-rs"
@@ -19,4 +19,3 @@ path = "lib.rs"
 [features]
 #will use the libqhyccd included in this crate - SDK version 23.09.06
 vendored = []
-
