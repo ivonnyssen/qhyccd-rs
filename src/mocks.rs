@@ -1,4 +1,4 @@
-#![allow(unused, non_snake_case, clippy::too_many_arguments)]
+#![allow(unused, non_snake_case, clippy::too_many_arguments, missing_docs)]
 
 //This file duplicates the libqhyccd-sys bindings, but with mockable functions.
 //These bindings are activated by the import config for the test target.
