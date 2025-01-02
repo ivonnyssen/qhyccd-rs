@@ -1,4 +1,15 @@
+//! # QHYCCD SDK bindings for Rust
 //!
+//! This crate provides a safe interface to the QHYCCD SDK for controlling QHYCCD cameras, filter wheels and focusers.
+//! The libqhyccd-sys crate provides the raw FFI bindings. It uses tracing for logging and eyre for error handling.
+//!
+//! # Example
+//! ```no_run
+//! use qhyccd_rs::Sdk;
+//! let sdk = Sdk::new().expect("SDK::new failed");
+//! let sdk_version = sdk.version().expect("get_sdk_version failed");
+//! println!("SDK version: {:?}", sdk_version);
+//! ```
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
 use std::ffi::{c_char, CStr};
