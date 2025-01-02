@@ -27,8 +27,9 @@ tracing-subscriber = "0.3.19"
 educe = "0.6.0"
 
 #to make Zminimal happy
-tracing-attributes = "0.1.28"
-enum-ordinalize-derive = "4.3.1"
+#tracing-attributes = "0.1.28"
+#enum-ordinalize-derive = "4.3.1"
+itertools = "0.12.1"
 
 [dev-dependencies]
 mockall = { version = "0.13.1", features = [] }
