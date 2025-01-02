@@ -32,6 +32,7 @@ tracing-attributes = "0.1.28"
 itertools = "0.12.1"
 num-bigint = "0.4.6"
 sharded-slab = "0.1.7"
+lazy-static = "1.5.0"
 
 [dev-dependencies]
 mockall = { version = "0.13.1", features = [] }
