@@ -11,7 +11,7 @@ Current bindings are not complete, but will grow as functionality is needed for 
 
 ```toml
 [dependencies]
-qhyccd-rs = "0.1.5"
+qhyccd-rs = "0.1.6"
 ```
 
 ## Rust version requirements
@@ -20,7 +20,7 @@ qhyccd-rs works with stable Rust. The minimum required Rust version is 1.65.0.
 
 ## Version of libqhyccd
 
-Currently the library works with  [QHYCCD SDK 23.09.06](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#23.09.06) newer versions require openCV to be installed and do not link well necessarily on ARM-based systems. The focus of this development here is unix, specifically AARCH64-based flavors, although CI is testing for x64 compatibility as well.
+Currently the library works with  [QHYCCD SDK 24.12.26](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#24.12.26). The focus of this development here is Linux, specifically AARCH64-based flavors, although CI is testing for x64 compatibility as well.
 
 ## License
 
@@ -64,18 +64,18 @@ sudo dnf install libusb1-devel
 #### ARM
 
 ```sh
-wget https://www.qhyccd.com/file/repository/publish/SDK/230906/sdk_Arm64_23.09.06.tgz
-tar xzvf sdk_Arm64_23.09.06.tgz 
-cd sdk_Arm64_23.09.06/
+wget https://www.qhyccd.com/file/repository/publish/SDK/24.12.26/sdk_Arm64_24.12.26.tgz
+tar xzvf sdk_Arm64_24.12.26.tgz 
+cd sdk_Arm64_24.12.26/
 sudo sh install.sh 
 ```
 
 #### Linux_64
 
 ```sh
-wget https://www.qhyccd.com/file/repository/publish/SDK/230906/sdk_linux64_23.09.06.tgz
-tar xzvf sdk_linux64_23.09.06.tgz
-cd sdk_linux64_23.09.06/
+wget https://www.qhyccd.com/file/repository/publish/SDK/24.12.26/sdk_linux64_24.12.27.tgz
+tar xzvf sdk_linux64_24.12.27.tgz
+cd sdk_linux64_24.12.26/
 sudo sh install.sh 
 ```
 
