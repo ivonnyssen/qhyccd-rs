@@ -27,13 +27,10 @@ jobs:
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
-      - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
-      - name: Test with latest nextest release
+      - name: Test
         uses: actions-rs/cargo@v1
         with:
-          command: nextest
-          args: run --locked --all-features --features libqhyccd-sys/vendored --all-targets
+          command: test run --locked --all-features --features libqhyccd-sys/vendored --all-targets
       #- name: cargo test --locked
       #  run: cargo test --locked --all-features --all-targets
   # https://twitter.com/alcuadrado/status/1571291687837732873
@@ -54,13 +51,10 @@ jobs:
       - name: cargo update
         if: hashFiles('Cargo.lock') != ''
         run: cargo update
-      - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
-      - name: Test with latest nextest release
+      - name: Test
         if: hashFiles('Cargo.lock') != ''
         uses: actions-rs/cargo@v1
         with:
-          command: nextest
-          args: run --locked --all-features --features libqhyccd-sys/vendored --all-targets
+          command: test run --locked --all-features --features libqhyccd-sys/vendored --all-targets
         env:
           RUSTFLAGS: -D deprecated
