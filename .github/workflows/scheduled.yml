@@ -29,8 +29,8 @@ jobs:
         run: cargo generate-lockfile
       - name: Test
         uses: actions-rs/cargo@v1
-      - name: cargo test --locked
-        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --all-targets
+        with:
+          command: test --locked --all-features --features libqhyccd-sys/vendored --all-targets
   # https://twitter.com/alcuadrado/status/1571291687837732873
   update:
     runs-on: ubuntu-latest
