@@ -11,12 +11,12 @@ Current bindings are not complete, but will grow as functionality is needed for 
 
 ```toml
 [dependencies]
-qhyccd-rs = "0.1.6"
+qhyccd-rs = "0.1.7"
 ```
 
 ## Rust version requirements
 
-qhyccd-rs works with stable Rust. The minimum required Rust version is 1.65.0.
+qhyccd-rs works with stable Rust. The minimum required Rust version is 1.68.
 
 ## Version of libqhyccd
 
