@@ -30,7 +30,10 @@ jobs:
         with:
           submodules: true
       - name: Install libusb
-        run: sudo apt-get install libusb-1.0-0-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libusb-1.0-0-dev
+          version: 1.0
       - name: Install ${{ matrix.toolchain }}
         uses: dtolnay/rust-toolchain@master
         with:
@@ -75,7 +78,10 @@ jobs:
         with:
           submodules: true
       - name: Install libusb
-        run: sudo apt-get install libusb-1.0-0-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libusb-1.0-0-dev
+          version: 1.0
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
       - name: Install nightly for -Zminimal-versions
@@ -115,7 +121,10 @@ jobs:
         with:
           submodules: true
       - name: Install libusb
-        run: sudo apt-get install libusb-1.0-0-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libusb-1.0-0-dev
+          version: 1.0
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
         with:
