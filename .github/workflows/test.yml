@@ -26,11 +26,14 @@ jobs:
         # toolchain
         toolchain: [stable, beta]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - name: Install libusb
-        run: sudo apt-get install libusb-1.0-0-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libusb-1.0-0-dev
+          version: 1.0
       - name: Install ${{ matrix.toolchain }}
         uses: dtolnay/rust-toolchain@master
         with:
@@ -71,11 +74,14 @@ jobs:
     runs-on: ubuntu-latest
     name: ubuntu / stable / minimal-versions
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - name: Install libusb
-        run: sudo apt-get install libusb-1.0-0-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libusb-1.0-0-dev
+          version: 1.0
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
       - name: Install nightly for -Zminimal-versions
@@ -86,30 +92,6 @@ jobs:
         run: cargo +nightly update -Zminimal-versions
       - name: cargo test
         run: cargo test --locked --all-features --features libqhyccd-sys/vendored --all-targets
-#  os-check:
-#    runs-on: ${{ matrix.os }}
-#    name: ${{ matrix.os }} / stable
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [macos-latest, windows-latest]
-#    steps:
-      # if your project needs OpenSSL, uncommment this to fix Windows builds.
-      # it's commented out by default as tthe install command takes 5-10m.
-      # - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-      #   if: runner.os == 'Windows'
-      # - run: vcpkg install openssl:x64-windows-static-md
-      #   if: runner.os == 'Windows'
-#      - uses: actions/checkout@v4
-#        with:
-#          submodules: true
-#      - name: Install stable
-#        uses: dtolnay/rust-toolchain@stable
-#      - name: cargo generate-lockfile
-#        if: hashFiles('Cargo.lock') == ''
-#        run: cargo generate-lockfile
-#      - name: cargo test
-#        run: cargo test --locked --all-features --all-targets
   coverage:
     # use llvm-cov to build and collect coverage and outputs in a format that
     # is compatible with codecov.io
@@ -135,11 +117,14 @@ jobs:
     runs-on: ubuntu-latest
     name: ubuntu / stable / coverage
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - name: Install libusb
-        run: sudo apt-get install libusb-1.0-0-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libusb-1.0-0-dev
+          version: 1.0
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
         with:

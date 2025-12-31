@@ -1,4 +1,4 @@
-use core::ffi::c_char;
+use std::ffi::c_char;
 
 pub const QHYCCD_PCIE: u32 = 9;
 pub const QHYCCD_WINPCAP: u32 = 8;
