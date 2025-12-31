@@ -26,11 +26,15 @@ jobs:
         with:
           packages: libusb-1.0-0-dev
           version: 1.0
+      - name: Install QHYCCD SDK
+        uses: ivonnyssen/qhyccd-sdk-install@main
+        with:
+          version: "25.09.29"
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
       - name: Test
-        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --all-targets
+        run: cargo test --locked --all-features --all-targets
   # https://twitter.com/alcuadrado/status/1571291687837732873
   update:
     # This action checks that updating the dependencies of this crate to the latest available that
@@ -53,6 +57,6 @@ jobs:
         run: cargo update
       - name: Test
         if: hashFiles('Cargo.lock') != ''
-        run: cargo test --locked --all-features --features libqhyccd-sys/vendored --all-targets
+        run: cargo test --locked --all-features --all-targets
         env:
           RUSTFLAGS: -D deprecated

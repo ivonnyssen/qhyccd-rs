@@ -20,7 +20,7 @@ qhyccd-rs works with stable Rust. The minimum required Rust version is 1.65.0.
 
 ## Version of libqhyccd
 
-Currently the library works with  [QHYCCD SDK 24.12.26](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#24.12.26). The focus of this development here is Linux, specifically AARCH64-based flavors, although CI is testing for x64 compatibility as well.
+Currently the library works with  [QHYCCD SDK 25.09.29](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#25.09.29). The focus of this development here is Linux, specifically AARCH64-based flavors, although CI is testing for x64 compatibility as well.
 
 ## License
 
@@ -64,18 +64,18 @@ sudo dnf install libusb1-devel
 #### ARM
 
 ```sh
-wget https://www.qhyccd.com/file/repository/publish/SDK/24.12.26/sdk_Arm64_24.12.26.tgz
-tar xzvf sdk_Arm64_24.12.26.tgz 
-cd sdk_Arm64_24.12.26/
+wget https://www.qhyccd.com/file/repository/publish/SDK/25.09.29/sdk_Arm64_25.09.29.tgz
+tar xzvf sdk_Arm64_25.09.29.tgz 
+cd sdk_Arm64_25.09.29/
 sudo sh install.sh 
 ```
 
 #### Linux_64
 
 ```sh
-wget https://www.qhyccd.com/file/repository/publish/SDK/24.12.26/sdk_linux64_24.12.27.tgz
-tar xzvf sdk_linux64_24.12.27.tgz
-cd sdk_linux64_24.12.27/
+wget https://www.qhyccd.com/file/repository/publish/SDK/25.09.29/sdk_linux64_25.09.29.tgz
+tar xzvf sdk_linux64_25.09.29.tgz
+cd sdk_linux64_25.09.29/
 sudo sh install.sh 
 ```
 
