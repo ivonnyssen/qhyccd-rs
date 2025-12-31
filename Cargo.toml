@@ -1,6 +1,7 @@
 [package]
 name = "qhyccd-rs"
 version = "0.1.6"
+edition ="2021"
 authors = ["Igor von Nyssen<igor@vonnyssen.com>"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -14,7 +15,6 @@ The libqhyccd-sys crate provides the raw FFI bindings. It uses tracing for loggi
 """
 categories = ["aerospace", "api-bindings"]
 homepage = "https://github.com/ivonnyssen/qhyccd-rs/wiki"
-edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
