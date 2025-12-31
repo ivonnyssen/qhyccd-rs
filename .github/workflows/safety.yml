@@ -66,6 +66,6 @@ jobs:
       - name: Install libusb
         run: sudo apt-get install libusb-1.0-0-dev
       - name: cargo miri test
-        run: cargo miri test --all-features --features libqhyccd-sys vendored
+        run: cargo miri test --all-features --features libqhyccd-sys/vendored
         env:
           MIRIFLAGS: ""
