@@ -21,6 +21,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }} / ${{ matrix.toolchain }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         # run on stable and beta to ensure that tests won't break on the next version of the rust
