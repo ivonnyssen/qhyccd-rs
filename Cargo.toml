@@ -1,7 +1,8 @@
 [package]
 name = "qhyccd-rs"
-version = "0.1.6"
+version = "0.1.7"
 edition ="2021"
+rust-version = "1.68.0" # for proc-macro2 v1.0.104
 authors = ["Igor von Nyssen<igor@vonnyssen.com>"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -16,20 +17,18 @@ The libqhyccd-sys crate provides the raw FFI bindings. It uses tracing for loggi
 categories = ["aerospace", "api-bindings"]
 homepage = "https://github.com/ivonnyssen/qhyccd-rs/wiki"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-libqhyccd-sys = { version = "0.1.3", path = "libqhyccd-sys" }
+libqhyccd-sys = { version = "0.1.4", path = "libqhyccd-sys" }
 eyre = "0.6.12"
-thiserror = "2.0.11"
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
+thiserror = "2.0.17"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.22"
 educe = "0.6.0"
 
 #to make Zminimal happy
 tracing-attributes = "0.1.28"
 enum-ordinalize-derive = "4.3.1"
-lazy_static = "1.5.0"
+lazy_static = "1.0.2"
 
 [dev-dependencies]
-mockall = { version = "0.13.1", features = [] }
+mockall = { version = "0.14.0", features = [] }
