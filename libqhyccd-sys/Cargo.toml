@@ -17,5 +17,4 @@ path = "lib.rs"
 [dependencies]
 
 [features]
-#will use the libqhyccd included in this crate - SDK version 25.09.29
-vendored = []
+# Removed vendored feature - now uses system-installed SDK
