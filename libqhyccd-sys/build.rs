@@ -13,6 +13,8 @@ fn main() {
                 } else {
                     format!("{}/sdk_macMix_25.09.29", workspace)
                 };
+                println!("cargo:warning=Looking for macOS SDK in GITHUB_WORKSPACE: {}", workspace);
+                println!("cargo:warning=Architecture: {}, SDK path: {}", arch, sdk_path);
                 println!("cargo:rustc-link-search=native={}", sdk_path);
             } else {
                 // Fallback to system installation
@@ -34,7 +36,10 @@ fn main() {
             };
 
             if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
-                let ws_sdk = PathBuf::from(workspace).join("sdk_WinMix_25.09.29").join("pkg_win");
+                let ws_sdk = PathBuf::from(&workspace).join("sdk_WinMix_25.09.29").join("pkg_win");
+                println!("cargo:warning=Looking for SDK in GITHUB_WORKSPACE: {}", workspace);
+                println!("cargo:warning=SDK path: {}", ws_sdk.display());
+                println!("cargo:warning=SDK arch path: {}", ws_sdk.join(arch_dir).display());
                 println!("cargo:rustc-link-search=native={}", ws_sdk.display());
                 println!("cargo:rustc-link-search=native={}", ws_sdk.join(arch_dir).display());
             }
