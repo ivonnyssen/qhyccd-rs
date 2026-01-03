@@ -1,11 +1,13 @@
+use std::{env, path::PathBuf};
+
 fn main() {
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
-    
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+
     match target_os.as_str() {
         "macos" => {
             // Check for SDK in workspace first (CI environment)
-            if let Ok(workspace) = std::env::var("GITHUB_WORKSPACE") {
-                let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+            if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
+                let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
                 let sdk_path = if arch == "aarch64" {
                     format!("{}/sdk_mac_arm_25.09.29", workspace)
                 } else {
@@ -21,9 +23,28 @@ fn main() {
             println!("cargo:rustc-link-lib=dylib=stdc++");
         }
         "windows" => {
-            if let Ok(workspace) = std::env::var("GITHUB_WORKSPACE") {
-                println!("cargo:rustc-link-search=native={}/sdk_WinMix_25.09.29", workspace);
+            let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+            let arch_dir = match arch.as_str() {
+                "x86_64" => "x64",
+                "x86" | "i686" => "x86",
+                other => {
+                    println!("cargo:warning=Unknown Windows arch '{}', defaulting to x64", other);
+                    "x64"
+                }
+            };
+
+            if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
+                let ws_sdk = PathBuf::from(workspace).join("sdk_WinMix_25.09.29");
+                println!("cargo:rustc-link-search=native={}", ws_sdk.display());
+                println!("cargo:rustc-link-search=native={}", ws_sdk.join(arch_dir).display());
             }
+
+            let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+            let sdk_dir = manifest_dir
+                .join("qhyccd-sdk")
+                .join("pkg_win")
+                .join(arch_dir);
+            println!("cargo:rustc-link-search=native={}", sdk_dir.display());
             println!("cargo:rustc-link-lib=static=qhyccd");
             // Windows SDK likely includes all dependencies
         }
