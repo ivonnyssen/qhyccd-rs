@@ -36,7 +36,7 @@ fn main() {
             };
 
             if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
-                let ws_sdk = PathBuf::from(&workspace).join("sdk_WinMix_25.09.29").join("pkg_win");
+                let ws_sdk = PathBuf::from(&workspace).join("pkg_win");
                 println!("cargo:warning=Looking for SDK in GITHUB_WORKSPACE: {}", workspace);
                 println!("cargo:warning=SDK path: {}", ws_sdk.display());
                 println!("cargo:warning=SDK arch path: {}", ws_sdk.join(arch_dir).display());
