@@ -34,7 +34,7 @@ fn main() {
             };
 
             if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
-                let ws_sdk = PathBuf::from(workspace).join("sdk_WinMix_25.09.29");
+                let ws_sdk = PathBuf::from(workspace).join("sdk_WinMix_25.09.29").join("pkg_win");
                 println!("cargo:rustc-link-search=native={}", ws_sdk.display());
                 println!("cargo:rustc-link-search=native={}", ws_sdk.join(arch_dir).display());
             }
