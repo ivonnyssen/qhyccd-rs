@@ -59,18 +59,11 @@ jobs:
           echo "=== Workspace contents ==="
           ls -la "${{ github.workspace }}"
           echo ""
-          echo "=== SDK directory structure ==="
-          if [ -d "${{ github.workspace }}/sdk_mac_arm_25.09.29" ]; then
-            echo "Found ARM SDK:"
-            find "${{ github.workspace }}/sdk_mac_arm_25.09.29" -type f -o -type d
-          fi
-          if [ -d "${{ github.workspace }}/sdk_macMix_25.09.29" ]; then
-            echo "Found Intel SDK:"
-            find "${{ github.workspace }}/sdk_macMix_25.09.29" -type f -o -type d
-          fi
-          if [ ! -d "${{ github.workspace }}/sdk_mac_arm_25.09.29" ] && [ ! -d "${{ github.workspace }}/sdk_macMix_25.09.29" ]; then
-            echo "No SDK directory found!"
-          fi
+          echo "=== All directories and files in workspace ==="
+          find "${{ github.workspace }}" -maxdepth 2 -type f -o -type d | head -50
+          echo ""
+          echo "=== Searching for qhyccd library files ==="
+          find "${{ github.workspace }}" -name "*qhyccd*" -o -name "*.a" -o -name "*.dylib" | head -20
       - name: Add QHYCCD to PATH (macOS)
         if: matrix.os == 'macos-latest'
         run: |
