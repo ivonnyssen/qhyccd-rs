@@ -36,7 +36,7 @@ jobs:
           packages: libusb-1.0-0-dev
           version: 1.0
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@main
+        uses: ivonnyssen/qhyccd-sdk-install@v1
         with:
           version: "25.09.29"
       - name: Add QHYCCD to PATH (Windows)
@@ -97,7 +97,7 @@ jobs:
           packages: libusb-1.0-0-dev
           version: 1.0
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@main
+        uses: ivonnyssen/qhyccd-sdk-install@v1
         with:
           version: "25.09.29"
       - name: Install stable
@@ -142,7 +142,7 @@ jobs:
           packages: libusb-1.0-0-dev
           version: 1.0
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@main
+        uses: ivonnyssen/qhyccd-sdk-install@v1
         with:
           version: "25.09.29"
       - name: Install stable
