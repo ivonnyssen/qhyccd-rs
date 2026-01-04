@@ -21,8 +21,8 @@ fn main() {
                 println!("cargo:rustc-link-search=native=/usr/local/lib");
             }
             println!("cargo:rustc-link-lib=static=qhyccd");
-            // macOS SDK likely includes USB support or uses system frameworks
-            println!("cargo:rustc-link-lib=dylib=stdc++");
+            // macOS uses libc++ instead of libstdc++
+            println!("cargo:rustc-link-lib=dylib=c++");
         }
         "windows" => {
             let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
