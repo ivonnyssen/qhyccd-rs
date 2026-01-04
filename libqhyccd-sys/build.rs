@@ -9,9 +9,9 @@ fn main() {
             if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
                 let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
                 let sdk_path = if arch == "aarch64" {
-                    format!("{}/sdk_mac_arm_25.09.29", workspace)
+                    format!("{}/sdk_mac_arm_25.09.29/usr/local/lib", workspace)
                 } else {
-                    format!("{}/sdk_macMix_25.09.29", workspace)
+                    format!("{}/sdk_macMix_25.09.29/usr/local/lib", workspace)
                 };
                 println!("cargo:warning=Looking for macOS SDK in GITHUB_WORKSPACE: {}", workspace);
                 println!("cargo:warning=Architecture: {}, SDK path: {}", arch, sdk_path);
@@ -37,9 +37,6 @@ fn main() {
 
             if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
                 let ws_sdk = PathBuf::from(&workspace).join("pkg_win");
-                println!("cargo:warning=Looking for SDK in GITHUB_WORKSPACE: {}", workspace);
-                println!("cargo:warning=SDK path: {}", ws_sdk.display());
-                println!("cargo:warning=SDK arch path: {}", ws_sdk.join(arch_dir).display());
                 println!("cargo:rustc-link-search=native={}", ws_sdk.display());
                 println!("cargo:rustc-link-search=native={}", ws_sdk.join(arch_dir).display());
             }
