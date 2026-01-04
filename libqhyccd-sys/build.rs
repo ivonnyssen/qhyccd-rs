@@ -13,8 +13,6 @@ fn main() {
                 } else {
                     format!("{}/sdk_macMix_25.09.29/usr/local/lib", workspace)
                 };
-                println!("cargo:warning=Looking for macOS SDK in GITHUB_WORKSPACE: {}", workspace);
-                println!("cargo:warning=Architecture: {}, SDK path: {}", arch, sdk_path);
                 println!("cargo:rustc-link-search=native={}", sdk_path);
             } else {
                 // Fallback to system installation

@@ -42,17 +42,6 @@ jobs:
       - name: Add QHYCCD to PATH (Windows)
         if: matrix.os == 'windows-latest'
         run: echo "${{ github.workspace }}\sdk_WinMix_25.09.29" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Debug - List SDK contents (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "=== Workspace contents ==="
-          ls -la "${{ github.workspace }}"
-          echo ""
-          echo "=== All directories and files in workspace ==="
-          find "${{ github.workspace }}" -maxdepth 2 -type f -o -type d | head -50
-          echo ""
-          echo "=== Searching for qhyccd library files ==="
-          find "${{ github.workspace }}" -name "*qhyccd*" -o -name "*.a" -o -name "*.dylib" | head -20
       - name: Add QHYCCD to PATH (macOS)
         if: matrix.os == 'macos-latest'
         run: |

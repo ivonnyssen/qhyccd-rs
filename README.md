@@ -20,7 +20,13 @@ qhyccd-rs works with stable Rust. The minimum required Rust version is 1.68.
 
 ## Version of libqhyccd
 
-Currently the library works with  [QHYCCD SDK 25.09.29](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#25.09.29). The focus of this development here is Linux, specifically AARCH64-based flavors, although CI is testing for x64 compatibility as well.
+Currently the library works with  [QHYCCD SDK 25.09.29](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#25.09.29). The library supports Linux, Windows, and macOS (experimental).
+
+## Platform Support
+
+- **Linux**: Fully supported (x86_64 and aarch64)
+- **Windows**: Fully supported
+- **macOS**: Experimental support (both Intel and Apple Silicon)
 
 ## License
 
@@ -45,23 +51,25 @@ dual licensed as above, without any additional terms or conditions.
 
 ## Quick Start
 
-### Install libusb-1.0-dev
+### Linux
 
-#### Debian / Ubuntu
+#### Install libusb-1.0-dev
+
+##### Debian / Ubuntu
 
 ```sh
 sudo apt-get install libusb-1.0-0-dev
 ```
 
-#### Fedora
+##### Fedora
 
 ```sh
 sudo dnf install libusb1-devel
 ```
 
-### Install QHYCCD SDK
+#### Install QHYCCD SDK
 
-#### ARM
+##### ARM
 
 ```sh
 wget https://www.qhyccd.com/file/repository/publish/SDK/25.09.29/sdk_Arm64_25.09.29.tgz
@@ -70,7 +78,7 @@ cd sdk_Arm64_25.09.29/
 sudo sh install.sh 
 ```
 
-#### Linux_64
+##### Linux_64
 
 ```sh
 wget https://www.qhyccd.com/file/repository/publish/SDK/25.09.29/sdk_linux64_25.09.29.tgz
@@ -78,6 +86,14 @@ tar xzvf sdk_linux64_25.09.29.tgz
 cd sdk_linux64_25.09.29/
 sudo sh install.sh 
 ```
+
+### Windows
+
+Download and install the QHYCCD SDK from the [official website](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#25.09.29).
+
+### macOS (Experimental)
+
+Download and install the QHYCCD SDK from the [official website](https://www.qhyccd.com/html/prepub/log_en.html#!log_en.md#25.09.29).
 
 ## Usage Examples
 
