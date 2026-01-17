@@ -2751,11 +2751,7 @@ impl FilterWheel {
     }
 }
 
+// Unit tests requiring FFI mocking are in src/tests/
+// Simulation integration tests are in tests/simulation/
 #[cfg(test)]
-mod test_camera;
-#[cfg(test)]
-mod test_filter_wheel;
-#[cfg(test)]
-mod test_sdk;
-#[cfg(all(test, feature = "simulation"))]
-mod test_simulation;
+mod tests;

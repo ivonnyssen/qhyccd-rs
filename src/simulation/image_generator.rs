@@ -3,9 +3,10 @@
 use rand::Rng;
 
 /// Pattern type for generated images
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum ImagePattern {
     /// Gradient from dark to light with noise
+    #[default]
     Gradient,
     /// Simulated star field
     StarField,
@@ -13,12 +14,6 @@ pub enum ImagePattern {
     Flat,
     /// Test pattern with geometric shapes
     TestPattern,
-}
-
-impl Default for ImagePattern {
-    fn default() -> Self {
-        Self::Gradient
-    }
 }
 
 /// Generates test images for simulated camera capture
@@ -182,13 +177,13 @@ impl ImageGenerator {
         let base = (self.base_level >> 8) as u8;
         let noise_range = (255.0 * self.noise_level * 0.5) as i16; // Less noise for starfield
 
-        for i in 0..data.len() {
+        for pixel in data.iter_mut() {
             let noise = if noise_range > 0 {
                 rng.gen_range(-noise_range..=noise_range)
             } else {
                 0
             };
-            data[i] = (base as i16 + noise).clamp(0, 255) as u8;
+            *pixel = (base as i16 + noise).clamp(0, 255) as u8;
         }
 
         // Add stars
@@ -244,6 +239,7 @@ impl ImageGenerator {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn draw_star_8bit(
         &self,
         data: &mut [u8],
@@ -280,6 +276,7 @@ impl ImageGenerator {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn draw_star_16bit(
         &self,
         data: &mut [u8],
@@ -464,38 +461,5 @@ impl ImageGenerator {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_generate_8bit() {
-        let gen = ImageGenerator::default();
-        let data = gen.generate_8bit(100, 100, 1);
-        assert_eq!(data.len(), 10000);
-    }
-
-    #[test]
-    fn test_generate_16bit() {
-        let gen = ImageGenerator::default();
-        let data = gen.generate_16bit(100, 100, 1);
-        assert_eq!(data.len(), 20000); // 2 bytes per pixel
-    }
-
-    #[test]
-    fn test_starfield_pattern() {
-        let gen = ImageGenerator::new(ImagePattern::StarField);
-        let data = gen.generate_16bit(200, 200, 1);
-        assert_eq!(data.len(), 80000);
-    }
-
-    #[test]
-    fn test_multi_channel() {
-        let gen = ImageGenerator::default();
-        let data = gen.generate_8bit(100, 100, 3);
-        assert_eq!(data.len(), 30000); // 3 channels
     }
 }

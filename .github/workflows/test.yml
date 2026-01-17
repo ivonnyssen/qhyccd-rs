@@ -29,8 +29,11 @@ jobs:
         toolchain: [stable, beta]
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install libusb (Ubuntu/act)
+        if: matrix.os == 'ubuntu-latest' && env.ACT
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - name: Install libusb (Ubuntu/GitHub)
+        if: matrix.os == 'ubuntu-latest' && !env.ACT
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
@@ -94,7 +97,11 @@ jobs:
     name: ubuntu / stable / minimal-versions
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb
+      - name: Install libusb (act)
+        if: ${{ env.ACT }}
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - name: Install libusb (GitHub)
+        if: ${{ !env.ACT }}
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
@@ -139,7 +146,11 @@ jobs:
     name: ubuntu / stable / coverage
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb
+      - name: Install libusb (act)
+        if: ${{ env.ACT }}
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - name: Install libusb (GitHub)
+        if: ${{ !env.ACT }}
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev

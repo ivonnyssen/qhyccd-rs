@@ -1,4 +1,3 @@
-use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
     BeginQHYCCDLive_context, CancelQHYCCDExposingAndReadout_context, CancelQHYCCDExposing_context,
     CloseQHYCCD_context, ExpQHYCCDSingleFrame_context, GetQHYCCDChipInfo_context,
@@ -13,6 +12,7 @@ use crate::mocks::mock_libqhyccd_sys::{
     SetQHYCCDResolution_context, SetQHYCCDStreamMode_context, StopQHYCCDLive_context,
     QHYCCD_SUCCESS,
 };
+use crate::*;
 
 const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_void;
 

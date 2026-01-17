@@ -167,6 +167,7 @@ impl SimulatedCameraState {
     }
 
     /// Updates the simulated temperature (call periodically for realistic behavior)
+    #[allow(dead_code)]
     pub fn update_temperature(&mut self) {
         if self.config.has_cooler && self.cooler_pwm > 0.0 {
             // Simple simulation: temperature approaches target based on PWM
@@ -184,62 +185,5 @@ impl SimulatedCameraState {
         // Update the parameter
         self.parameters
             .insert(Control::CurTemp, self.current_temperature);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new_state() {
-        let config = SimulatedCameraConfig::default();
-        let state = SimulatedCameraState::new(config);
-
-        assert!(!state.is_open);
-        assert!(!state.is_initialized);
-        assert_eq!(state.binning, (1, 1));
-    }
-
-    #[test]
-    fn test_image_dimensions() {
-        let config = SimulatedCameraConfig::default();
-        let mut state = SimulatedCameraState::new(config);
-
-        let (w, h) = state.get_current_image_dimensions();
-        assert_eq!(w, 3072);
-        assert_eq!(h, 2048);
-
-        state.binning = (2, 2);
-        let (w, h) = state.get_current_image_dimensions();
-        assert_eq!(w, 1536);
-        assert_eq!(h, 1024);
-    }
-
-    #[test]
-    fn test_buffer_size() {
-        let config = SimulatedCameraConfig::default();
-        let state = SimulatedCameraState::new(config);
-
-        // 3072 * 2048 * 2 bytes (16-bit) * 1 channel = 12,582,912
-        assert_eq!(state.calculate_buffer_size(), 12_582_912);
-    }
-
-    #[test]
-    fn test_exposure_timing() {
-        let config = SimulatedCameraConfig::default();
-        let mut state = SimulatedCameraState::new(config);
-
-        state.exposure_duration_us = 1000; // 1ms
-        state.start_exposure();
-
-        // Should not be complete immediately
-        assert!(!state.is_exposure_complete());
-        assert!(state.get_remaining_exposure_us() > 0);
-
-        // Wait and check again
-        std::thread::sleep(std::time::Duration::from_millis(2));
-        assert!(state.is_exposure_complete());
-        assert_eq!(state.get_remaining_exposure_us(), 0);
     }
 }

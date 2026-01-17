@@ -49,7 +49,7 @@ impl Default for SimulatedCameraConfig {
         // Basic controls
         supported_controls.insert(Control::Gain, (0.0, 100.0, 1.0));
         supported_controls.insert(Control::Offset, (0.0, 255.0, 1.0));
-        supported_controls.insert(Control::Exposure, (1.0, 3600_000_000.0, 1.0)); // 1us to 1hr
+        supported_controls.insert(Control::Exposure, (1.0, 3_600_000_000.0, 1.0)); // 1us to 1hr
         supported_controls.insert(Control::Speed, (0.0, 2.0, 1.0));
         supported_controls.insert(Control::UsbTraffic, (0.0, 255.0, 1.0));
         supported_controls.insert(Control::TransferBit, (8.0, 16.0, 8.0));
@@ -185,60 +185,5 @@ impl SimulatedCameraConfig {
     pub fn with_control(mut self, control: Control, min: f64, max: f64, step: f64) -> Self {
         self.supported_controls.insert(control, (min, max, step));
         self
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_default_config() {
-        let config = SimulatedCameraConfig::default();
-        assert_eq!(config.id, "SIM-001");
-        assert_eq!(config.filter_wheel_slots, 0);
-        assert!(!config.has_cooler);
-        assert!(config.bayer_mode.is_none());
-    }
-
-    #[test]
-    fn test_with_filter_wheel() {
-        let config = SimulatedCameraConfig::default().with_filter_wheel(5);
-        assert_eq!(config.filter_wheel_slots, 5);
-        assert!(config.supported_controls.contains_key(&Control::CfwPort));
-        assert!(config
-            .supported_controls
-            .contains_key(&Control::CfwSlotsNum));
-    }
-
-    #[test]
-    fn test_with_cooler() {
-        let config = SimulatedCameraConfig::default().with_cooler();
-        assert!(config.has_cooler);
-        assert!(config.supported_controls.contains_key(&Control::Cooler));
-        assert!(config.supported_controls.contains_key(&Control::CurTemp));
-    }
-
-    #[test]
-    fn test_with_color() {
-        let config = SimulatedCameraConfig::default().with_color(BayerMode::RGGB);
-        assert_eq!(config.bayer_mode, Some(BayerMode::RGGB));
-        assert!(config.supported_controls.contains_key(&Control::CamColor));
-    }
-
-    #[test]
-    fn test_builder_chaining() {
-        let config = SimulatedCameraConfig::default()
-            .with_id("TEST-001")
-            .with_model("Test Camera")
-            .with_filter_wheel(7)
-            .with_cooler()
-            .with_color(BayerMode::GBRG);
-
-        assert_eq!(config.id, "TEST-001");
-        assert_eq!(config.model, "Test Camera");
-        assert_eq!(config.filter_wheel_slots, 7);
-        assert!(config.has_cooler);
-        assert_eq!(config.bayer_mode, Some(BayerMode::GBRG));
     }
 }

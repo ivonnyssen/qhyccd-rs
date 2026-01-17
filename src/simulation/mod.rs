@@ -23,6 +23,11 @@ mod config;
 mod image_generator;
 mod state;
 
+// Note: config and image_generator tests are now in tests/simulation/
+// state_tests remain here because SimulatedCameraState is pub(crate)
+#[cfg(test)]
+mod test_state;
+
 pub use config::SimulatedCameraConfig;
 pub use image_generator::{ImageGenerator, ImagePattern};
 pub(crate) use state::SimulatedCameraState;

@@ -1,9 +1,9 @@
-use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
     CloseQHYCCD_context, GetQHYCCDId_context, GetQHYCCDSDKVersion_context,
     InitQHYCCDResource_context, IsQHYCCDCFWPlugged_context, OpenQHYCCD_context,
     ReleaseQHYCCDResource_context, ScanQHYCCD_context, QHYCCD_SUCCESS,
 };
+use crate::*;
 
 use crate::QHYError::{GetCameraIdError, InitSDKError, ScanQHYCCDError};
 
