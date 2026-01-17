@@ -2269,6 +2269,15 @@ impl Camera {
                     Control::CfwSlotsNum => Ok(state.config.filter_wheel_slots as f64),
                     Control::CurTemp => Ok(state.current_temperature),
                     Control::CurPWM => Ok(state.cooler_pwm),
+                    Control::Cooler => {
+                        if state.config.supported_controls.contains_key(&Control::Cooler) {
+                            Ok(state.target_temperature)
+                        } else {
+                            let error = GetParameterError { control };
+                            tracing::error!(error = ?error);
+                            Err(eyre!(error))
+                        }
+                    }
                     _ => state.parameters.get(&control).copied().ok_or_else(|| {
                         let error = GetParameterError { control };
                         tracing::error!(error = ?error);

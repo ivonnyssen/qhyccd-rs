@@ -679,3 +679,505 @@ fn test_no_filter_wheel() {
 
     camera.close().unwrap();
 }
+
+// ============================================================================
+// Trait Implementation Tests
+// ============================================================================
+
+#[test]
+fn test_camera_clone() {
+    let config = SimulatedCameraConfig::default().with_id("CLONE-TEST");
+    let camera1 = Camera::new_simulated(config);
+
+    // Clone the camera
+    let camera2 = camera1.clone();
+
+    // Both should have the same ID
+    assert_eq!(camera1.id(), camera2.id());
+    assert_eq!(camera1.id(), "CLONE-TEST");
+
+    // Both should be simulated
+    assert!(camera1.is_simulated());
+    assert!(camera2.is_simulated());
+
+    // Opening one should not affect the other's state query
+    camera1.open().unwrap();
+    assert!(camera1.is_open().unwrap());
+
+    camera1.close().unwrap();
+}
+
+#[test]
+fn test_camera_partial_eq() {
+    let config1 = SimulatedCameraConfig::default().with_id("CAM-A");
+    let config2 = SimulatedCameraConfig::default().with_id("CAM-B");
+    let config3 = SimulatedCameraConfig::default().with_id("CAM-A");
+
+    let camera_a = Camera::new_simulated(config1);
+    let camera_b = Camera::new_simulated(config2);
+    let camera_a2 = Camera::new_simulated(config3);
+
+    // Cameras with the same ID should be equal
+    assert_eq!(camera_a, camera_a2);
+
+    // Cameras with different IDs should not be equal
+    assert_ne!(camera_a, camera_b);
+}
+
+#[test]
+fn test_camera_debug() {
+    let config = SimulatedCameraConfig::default().with_id("DEBUG-TEST");
+    let camera = Camera::new_simulated(config);
+
+    let debug_str = format!("{:?}", camera);
+    assert!(debug_str.contains("Camera"));
+    assert!(debug_str.contains("DEBUG-TEST"));
+}
+
+// ============================================================================
+// Additional Error Case Tests
+// ============================================================================
+
+#[test]
+fn test_init_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // init() without opening should fail
+    assert!(camera.init().is_err());
+}
+
+#[test]
+fn test_set_stream_mode_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // set_stream_mode() without opening should fail
+    assert!(camera.set_stream_mode(StreamMode::LiveMode).is_err());
+}
+
+#[test]
+fn test_set_bin_mode_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // set_bin_mode() without opening should fail
+    assert!(camera.set_bin_mode(2, 2).is_err());
+}
+
+#[test]
+fn test_set_bit_mode_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // set_bit_mode() without opening should fail
+    assert!(camera.set_bit_mode(8).is_err());
+}
+
+#[test]
+fn test_begin_live_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // begin_live() without opening should fail
+    assert!(camera.begin_live().is_err());
+}
+
+#[test]
+fn test_end_live_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // end_live() without opening should fail
+    assert!(camera.end_live().is_err());
+}
+
+#[test]
+fn test_get_image_size_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_image_size() without opening should fail
+    assert!(camera.get_image_size().is_err());
+}
+
+#[test]
+fn test_get_live_frame_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_live_frame() without opening should fail
+    assert!(camera.get_live_frame(1000).is_err());
+}
+
+#[test]
+fn test_get_single_frame_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_single_frame() without opening should fail
+    assert!(camera.get_single_frame(1000).is_err());
+}
+
+#[test]
+fn test_start_single_frame_exposure_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // start_single_frame_exposure() without opening should fail
+    assert!(camera.start_single_frame_exposure().is_err());
+}
+
+#[test]
+fn test_get_remaining_exposure_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_remaining_exposure_us() without opening should fail
+    assert!(camera.get_remaining_exposure_us().is_err());
+}
+
+#[test]
+fn test_set_roi_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    let roi = CCDChipArea {
+        start_x: 0,
+        start_y: 0,
+        width: 100,
+        height: 100,
+    };
+
+    // set_roi() without opening should fail
+    assert!(camera.set_roi(roi).is_err());
+}
+
+#[test]
+fn test_set_debayer_not_open_error() {
+    let config = SimulatedCameraConfig::default().with_color(BayerMode::RGGB);
+    let camera = Camera::new_simulated(config);
+
+    // set_debayer() without opening should fail
+    assert!(camera.set_debayer(true).is_err());
+}
+
+#[test]
+fn test_is_cfw_plugged_in_not_open_error() {
+    let config = SimulatedCameraConfig::default().with_filter_wheel(5);
+    let camera = Camera::new_simulated(config);
+
+    // is_cfw_plugged_in() without opening should fail
+    assert!(camera.is_cfw_plugged_in().is_err());
+}
+
+#[test]
+fn test_get_type_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_type() without opening should fail
+    assert!(camera.get_type().is_err());
+}
+
+#[test]
+fn test_get_number_of_readout_modes_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_number_of_readout_modes() without opening should fail
+    assert!(camera.get_number_of_readout_modes().is_err());
+}
+
+#[test]
+fn test_get_readout_mode_name_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_readout_mode_name() without opening should fail
+    assert!(camera.get_readout_mode_name(0).is_err());
+}
+
+#[test]
+fn test_get_readout_mode_resolution_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_readout_mode_resolution() without opening should fail
+    assert!(camera.get_readout_mode_resolution(0).is_err());
+}
+
+#[test]
+fn test_set_readout_mode_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // set_readout_mode() without opening should fail
+    assert!(camera.set_readout_mode(0).is_err());
+}
+
+#[test]
+fn test_is_control_available_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // is_control_available() without opening returns None (not an error, but no result)
+    // This is expected behavior - returns None when camera not open
+    let result = camera.is_control_available(Control::Gain);
+    assert!(result.is_none());
+}
+
+#[test]
+fn test_get_parameter_min_max_step_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_parameter_min_max_step() without opening should fail
+    assert!(camera.get_parameter_min_max_step(Control::Gain).is_err());
+}
+
+#[test]
+fn test_invalid_readout_mode_name() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+
+    // Requesting a non-existent readout mode should fail
+    let result = camera.get_readout_mode_name(99);
+    assert!(result.is_err());
+
+    camera.close().unwrap();
+}
+
+#[test]
+fn test_invalid_readout_mode_resolution() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+
+    // Requesting a non-existent readout mode resolution should fail
+    let result = camera.get_readout_mode_resolution(99);
+    assert!(result.is_err());
+
+    camera.close().unwrap();
+}
+
+#[test]
+fn test_filter_wheel_not_open_errors() {
+    let config = SimulatedCameraConfig::default()
+        .with_id("FW-ERROR-TEST")
+        .with_filter_wheel(5);
+    let camera = Camera::new_simulated(config);
+    let fw = FilterWheel::new(camera);
+
+    // Filter wheel operations without opening should fail
+    assert!(fw.get_number_of_filters().is_err());
+    assert!(fw.get_fw_position().is_err());
+    assert!(fw.set_fw_position(1).is_err());
+    assert!(fw.is_cfw_plugged_in().is_err());
+}
+
+#[test]
+fn test_multiple_simulated_cameras() {
+    let mut sdk = Sdk::new_simulated();
+
+    // Add multiple cameras
+    sdk.add_simulated_camera(SimulatedCameraConfig::default().with_id("CAM-001"));
+    sdk.add_simulated_camera(SimulatedCameraConfig::default().with_id("CAM-002"));
+    sdk.add_simulated_camera(
+        SimulatedCameraConfig::default()
+            .with_id("CAM-003")
+            .with_filter_wheel(5),
+    );
+
+    assert_eq!(sdk.cameras().count(), 3);
+    assert_eq!(sdk.filter_wheels().count(), 1); // Only CAM-003 has a filter wheel
+
+    // Verify camera IDs
+    let ids: Vec<_> = sdk.cameras().map(|c| c.id().to_string()).collect();
+    assert!(ids.contains(&"CAM-001".to_string()));
+    assert!(ids.contains(&"CAM-002".to_string()));
+    assert!(ids.contains(&"CAM-003".to_string()));
+}
+
+#[test]
+fn test_get_current_readout_mode() {
+    let config = SimulatedCameraConfig::default()
+        .with_readout_mode("High Speed", 3072, 2048)
+        .with_readout_mode("Low Noise", 1536, 1024);
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+
+    // Get initial readout mode (should be 0)
+    let mode = camera.get_readout_mode().unwrap();
+    assert_eq!(mode, 0);
+
+    // Set to mode 1
+    camera.set_readout_mode(1).unwrap();
+
+    // Get current mode (should be 1)
+    let mode = camera.get_readout_mode().unwrap();
+    assert_eq!(mode, 1);
+
+    // Set to mode 2
+    camera.set_readout_mode(2).unwrap();
+    let mode = camera.get_readout_mode().unwrap();
+    assert_eq!(mode, 2);
+
+    camera.close().unwrap();
+}
+
+#[test]
+fn test_get_readout_mode_not_open_error() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+
+    // get_readout_mode() without opening should fail
+    assert!(camera.get_readout_mode().is_err());
+}
+
+#[test]
+fn test_custom_chip_info() {
+    use qhyccd_rs::CCDChipInfo;
+
+    let chip_info = CCDChipInfo {
+        chip_width: 14.0,
+        chip_height: 10.0,
+        image_width: 4096,
+        image_height: 3072,
+        pixel_width: 3.76,
+        pixel_height: 3.76,
+        bits_per_pixel: 16,
+    };
+    let config = SimulatedCameraConfig::default().with_chip_info(chip_info);
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+
+    let info = camera.get_ccd_info().unwrap();
+    assert_eq!(info.image_width, 4096);
+    assert_eq!(info.image_height, 3072);
+    assert!((info.pixel_width - 3.76).abs() < 0.01);
+    assert!((info.pixel_height - 3.76).abs() < 0.01);
+
+    camera.close().unwrap();
+}
+
+#[test]
+fn test_cooler_controls() {
+    let config = SimulatedCameraConfig::default().with_cooler();
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+
+    // Check cooler control is available
+    assert!(camera.is_control_available(Control::Cooler).is_some());
+    assert!(camera.is_control_available(Control::CurTemp).is_some());
+
+    // Get current temperature
+    let temp = camera.get_parameter(Control::CurTemp).unwrap();
+    assert!(temp > -50.0 && temp < 50.0); // Reasonable range
+
+    // Set cooler target temperature
+    camera.set_parameter(Control::Cooler, -10.0).unwrap();
+    let cooler_target = camera.get_parameter(Control::Cooler).unwrap();
+    assert!((cooler_target - (-10.0)).abs() < 0.001);
+
+    camera.close().unwrap();
+}
+
+#[test]
+fn test_usb_traffic_control() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+
+    // Check USB traffic control is available
+    assert!(camera.is_control_available(Control::UsbTraffic).is_some());
+
+    // Get and set USB traffic
+    let (min, max, step) = camera.get_parameter_min_max_step(Control::UsbTraffic).unwrap();
+    assert!(min <= max);
+    assert!(step > 0.0);
+
+    camera.set_parameter(Control::UsbTraffic, 50.0).unwrap();
+    let traffic = camera.get_parameter(Control::UsbTraffic).unwrap();
+    assert!((traffic - 50.0).abs() < f64::EPSILON);
+
+    camera.close().unwrap();
+}
+
+#[test]
+fn test_offset_control() {
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+
+    // Check offset control is available
+    assert!(camera.is_control_available(Control::Offset).is_some());
+
+    // Get and set offset
+    camera.set_parameter(Control::Offset, 10.0).unwrap();
+    let offset = camera.get_parameter(Control::Offset).unwrap();
+    assert!((offset - 10.0).abs() < f64::EPSILON);
+
+    camera.close().unwrap();
+}
+
+#[test]
+fn test_image_with_custom_generator() {
+    let gen = ImageGenerator::new(ImagePattern::TestPattern)
+        .with_noise_level(5.0)
+        .with_base_level(1000);
+
+    let config = SimulatedCameraConfig::default();
+    let camera = Camera::new_simulated(config);
+    camera.open().unwrap();
+    camera.set_stream_mode(StreamMode::LiveMode).unwrap();
+    camera.init().unwrap();
+    camera.begin_live().unwrap();
+
+    let buffer_size = camera.get_image_size().unwrap();
+    let image = camera.get_live_frame(buffer_size).unwrap();
+
+    // Image should have expected dimensions
+    assert_eq!(image.width, 3072);
+    assert_eq!(image.height, 2048);
+    assert!(!image.data.is_empty());
+
+    camera.end_live().unwrap();
+    camera.close().unwrap();
+
+    // Also test the generator directly produces test pattern
+    let data = gen.generate_16bit(100, 100, 1);
+    assert_eq!(data.len(), 20000); // 100 * 100 * 2 bytes
+}
+
+#[test]
+fn test_filter_wheel_close_then_reopen() {
+    let config = SimulatedCameraConfig::default()
+        .with_id("FW-REOPEN")
+        .with_filter_wheel(5);
+    let camera = Camera::new_simulated(config);
+    let fw = FilterWheel::new(camera);
+
+    // Open
+    fw.open().unwrap();
+    assert!(fw.is_open().unwrap());
+
+    // Set position
+    fw.set_fw_position(2).unwrap();
+    assert_eq!(fw.get_fw_position().unwrap(), 2);
+
+    // Close
+    fw.close().unwrap();
+    assert!(!fw.is_open().unwrap());
+
+    // Reopen
+    fw.open().unwrap();
+    assert!(fw.is_open().unwrap());
+
+    // Position should still be accessible
+    let pos = fw.get_fw_position().unwrap();
+    assert!(pos < 10); // Valid position range
+
+    fw.close().unwrap();
+}
