@@ -129,8 +129,7 @@ impl ImageGenerator {
                 } else {
                     0
                 };
-                let value =
-                    (base as i16 + gradient as i16 + noise).clamp(0, 255) as u8;
+                let value = (base as i16 + gradient as i16 + noise).clamp(0, 255) as u8;
 
                 let idx = ((y * width + x) * channels) as usize;
                 for c in 0..channels as usize {
@@ -158,8 +157,8 @@ impl ImageGenerator {
                 } else {
                     0
                 };
-                let value = (self.base_level as i32 + gradient as i32 + noise)
-                    .clamp(0, 65535) as u16;
+                let value =
+                    (self.base_level as i32 + gradient as i32 + noise).clamp(0, 65535) as u16;
 
                 let idx = ((y * width + x) * channels) as usize * 2;
                 let bytes = value.to_le_bytes();
@@ -265,8 +264,8 @@ impl ImageGenerator {
                     continue;
                 }
 
-                let dist = (((dx as i32 - size as i32).pow(2)
-                    + (dy as i32 - size as i32).pow(2)) as f64)
+                let dist = (((dx as i32 - size as i32).pow(2) + (dy as i32 - size as i32).pow(2))
+                    as f64)
                     .sqrt();
                 if dist <= size as f64 {
                     let falloff = 1.0 - (dist / (size as f64 + 1.0));
@@ -301,8 +300,8 @@ impl ImageGenerator {
                     continue;
                 }
 
-                let dist = (((dx as i32 - size as i32).pow(2)
-                    + (dy as i32 - size as i32).pow(2)) as f64)
+                let dist = (((dx as i32 - size as i32).pow(2) + (dy as i32 - size as i32).pow(2))
+                    as f64)
                     .sqrt();
                 if dist <= size as f64 {
                     let falloff = 1.0 - (dist / (size as f64 + 1.0));
@@ -367,8 +366,7 @@ impl ImageGenerator {
                 } else {
                     0
                 };
-                let value =
-                    (self.base_level as i32 + noise).clamp(0, 65535) as u16;
+                let value = (self.base_level as i32 + noise).clamp(0, 65535) as u16;
 
                 let idx = ((y * width + x) * channels) as usize * 2;
                 let bytes = value.to_le_bytes();
@@ -403,8 +401,8 @@ impl ImageGenerator {
                 // Add concentric circles in center
                 let cx = width / 2;
                 let cy = height / 2;
-                let dist = (((x as i32 - cx as i32).pow(2) + (y as i32 - cy as i32).pow(2)) as f64)
-                    .sqrt();
+                let dist =
+                    (((x as i32 - cx as i32).pow(2) + (y as i32 - cy as i32).pow(2)) as f64).sqrt();
                 let ring = ((dist / 50.0) as u32) % 2;
                 let ring_mod = if ring == 0 { 20i16 } else { -20i16 };
 
@@ -446,8 +444,8 @@ impl ImageGenerator {
                 // Add concentric circles in center
                 let cx = width / 2;
                 let cy = height / 2;
-                let dist = (((x as i32 - cx as i32).pow(2) + (y as i32 - cy as i32).pow(2)) as f64)
-                    .sqrt();
+                let dist =
+                    (((x as i32 - cx as i32).pow(2) + (y as i32 - cy as i32).pow(2)) as f64).sqrt();
                 let ring = ((dist / 50.0) as u32) % 2;
                 let ring_mod: i32 = if ring == 0 { 5000 } else { -5000 };
 

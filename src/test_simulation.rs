@@ -142,9 +142,7 @@ fn test_simulated_camera_single_frame_mode() {
     let camera = Camera::new_simulated(config);
     camera.open().unwrap();
 
-    camera
-        .set_stream_mode(StreamMode::SingleFrameMode)
-        .unwrap();
+    camera.set_stream_mode(StreamMode::SingleFrameMode).unwrap();
     camera.init().unwrap();
     camera.set_parameter(Control::Exposure, 1000.0).unwrap(); // 1ms
 
@@ -344,9 +342,7 @@ fn test_exposure_timing() {
     let config = SimulatedCameraConfig::default();
     let camera = Camera::new_simulated(config);
     camera.open().unwrap();
-    camera
-        .set_stream_mode(StreamMode::SingleFrameMode)
-        .unwrap();
+    camera.set_stream_mode(StreamMode::SingleFrameMode).unwrap();
     camera.init().unwrap();
 
     // Set a short exposure

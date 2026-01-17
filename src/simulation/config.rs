@@ -129,11 +129,16 @@ impl SimulatedCameraConfig {
     /// Makes this a color camera with the specified Bayer pattern
     pub fn with_color(mut self, bayer_mode: BayerMode) -> Self {
         self.bayer_mode = Some(bayer_mode);
+        self.supported_controls.insert(
+            Control::CamColor,
+            (bayer_mode as u32 as f64, bayer_mode as u32 as f64, 0.0),
+        );
         self.supported_controls
-            .insert(Control::CamColor, (bayer_mode as u32 as f64, bayer_mode as u32 as f64, 0.0));
-        self.supported_controls.insert(Control::Wbr, (0.0, 255.0, 1.0));
-        self.supported_controls.insert(Control::Wbb, (0.0, 255.0, 1.0));
-        self.supported_controls.insert(Control::Wbg, (0.0, 255.0, 1.0));
+            .insert(Control::Wbr, (0.0, 255.0, 1.0));
+        self.supported_controls
+            .insert(Control::Wbb, (0.0, 255.0, 1.0));
+        self.supported_controls
+            .insert(Control::Wbg, (0.0, 255.0, 1.0));
         self
     }
 
@@ -201,7 +206,9 @@ mod tests {
         let config = SimulatedCameraConfig::default().with_filter_wheel(5);
         assert_eq!(config.filter_wheel_slots, 5);
         assert!(config.supported_controls.contains_key(&Control::CfwPort));
-        assert!(config.supported_controls.contains_key(&Control::CfwSlotsNum));
+        assert!(config
+            .supported_controls
+            .contains_key(&Control::CfwSlotsNum));
     }
 
     #[test]

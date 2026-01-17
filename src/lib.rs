@@ -970,7 +970,9 @@ impl Camera {
                     return Err(eyre!(CameraNotOpenError));
                 }
                 if mode as usize >= state.config.readout_modes.len() {
-                    return Err(eyre!(SetReadoutModeError { error_code: QHYCCD_ERROR }));
+                    return Err(eyre!(SetReadoutModeError {
+                        error_code: QHYCCD_ERROR
+                    }));
                 }
                 state.readout_mode = mode;
                 Ok(())
@@ -1060,10 +1062,15 @@ impl Camera {
                 }
                 state.is_initialized = true;
                 // Reset ROI to full frame based on current readout mode
-                let (width, height) = state.config.readout_modes
+                let (width, height) = state
+                    .config
+                    .readout_modes
                     .get(state.readout_mode as usize)
                     .map(|(_, res)| *res)
-                    .unwrap_or((state.config.chip_info.image_width, state.config.chip_info.image_height));
+                    .unwrap_or((
+                        state.config.chip_info.image_width,
+                        state.config.chip_info.image_height,
+                    ));
                 state.roi = CCDChipArea {
                     start_x: 0,
                     start_y: 0,
@@ -1213,7 +1220,9 @@ impl Camera {
                 if !state.is_open {
                     return Err(eyre!(CameraNotOpenError));
                 }
-                state.config.readout_modes
+                state
+                    .config
+                    .readout_modes
                     .get(index as usize)
                     .map(|(name, _)| name.clone())
                     .ok_or_else(|| eyre!(GetReadoutModeNameError))
@@ -1266,7 +1275,9 @@ impl Camera {
                 if !state.is_open {
                     return Err(eyre!(CameraNotOpenError));
                 }
-                state.config.readout_modes
+                state
+                    .config
+                    .readout_modes
                     .get(index as usize)
                     .map(|(_, res)| *res)
                     .ok_or_else(|| eyre!(GetReadoutModeResolutionError))
@@ -1667,7 +1678,9 @@ impl Camera {
                     return Err(eyre!(CameraNotOpenError));
                 }
                 if !state.live_mode_active {
-                    return Err(eyre!(GetLiveFrameError { error_code: QHYCCD_ERROR }));
+                    return Err(eyre!(GetLiveFrameError {
+                        error_code: QHYCCD_ERROR
+                    }));
                 }
 
                 let (width, height) = state.get_current_image_dimensions();
@@ -2253,22 +2266,14 @@ impl Camera {
                         // Return position as ASCII value (48 = '0')
                         Ok((state.filter_wheel_position + 48) as f64)
                     }
-                    Control::CfwSlotsNum => {
-                        Ok(state.config.filter_wheel_slots as f64)
-                    }
-                    Control::CurTemp => {
-                        Ok(state.current_temperature)
-                    }
-                    Control::CurPWM => {
-                        Ok(state.cooler_pwm)
-                    }
-                    _ => {
-                        state.parameters.get(&control).copied().ok_or_else(|| {
-                            let error = GetParameterError { control };
-                            tracing::error!(error = ?error);
-                            eyre!(error)
-                        })
-                    }
+                    Control::CfwSlotsNum => Ok(state.config.filter_wheel_slots as f64),
+                    Control::CurTemp => Ok(state.current_temperature),
+                    Control::CurPWM => Ok(state.cooler_pwm),
+                    _ => state.parameters.get(&control).copied().ok_or_else(|| {
+                        let error = GetParameterError { control };
+                        tracing::error!(error = ?error);
+                        eyre!(error)
+                    }),
                 }
             }
         }
@@ -2316,11 +2321,16 @@ impl Camera {
                 if !state.is_open {
                     return Err(eyre!(CameraNotOpenError));
                 }
-                state.config.supported_controls.get(&control).copied().ok_or_else(|| {
-                    let error = GetMinMaxStepError { control };
-                    tracing::error!(error = ?error);
-                    eyre!(error)
-                })
+                state
+                    .config
+                    .supported_controls
+                    .get(&control)
+                    .copied()
+                    .ok_or_else(|| {
+                        let error = GetMinMaxStepError { control };
+                        tracing::error!(error = ?error);
+                        eyre!(error)
+                    })
             }
         }
     }
