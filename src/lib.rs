@@ -2270,7 +2270,11 @@ impl Camera {
                     Control::CurTemp => Ok(state.current_temperature),
                     Control::CurPWM => Ok(state.cooler_pwm),
                     Control::Cooler => {
-                        if state.config.supported_controls.contains_key(&Control::Cooler) {
+                        if state
+                            .config
+                            .supported_controls
+                            .contains_key(&Control::Cooler)
+                        {
                             Ok(state.target_temperature)
                         } else {
                             let error = GetParameterError { control };

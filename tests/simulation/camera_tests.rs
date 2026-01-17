@@ -1094,7 +1094,9 @@ fn test_usb_traffic_control() {
     assert!(camera.is_control_available(Control::UsbTraffic).is_some());
 
     // Get and set USB traffic
-    let (min, max, step) = camera.get_parameter_min_max_step(Control::UsbTraffic).unwrap();
+    let (min, max, step) = camera
+        .get_parameter_min_max_step(Control::UsbTraffic)
+        .unwrap();
     assert!(min <= max);
     assert!(step > 0.0);
 
