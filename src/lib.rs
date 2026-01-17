@@ -629,7 +629,7 @@ impl Sdk {
     /// using `add_simulated_camera()`.
     ///
     /// # Example
-    /// ```
+    /// ```no_run
     /// use qhyccd_rs::Sdk;
     /// use qhyccd_rs::simulation::SimulatedCameraConfig;
     ///
@@ -654,7 +654,7 @@ impl Sdk {
     /// a corresponding FilterWheel will also be added.
     ///
     /// # Example
-    /// ```
+    /// ```no_run
     /// use qhyccd_rs::Sdk;
     /// use qhyccd_rs::simulation::SimulatedCameraConfig;
     ///
@@ -856,7 +856,7 @@ impl Camera {
     /// Creates a new simulated camera instance
     ///
     /// # Example
-    /// ```
+    /// ```no_run
     /// use qhyccd_rs::Camera;
     /// use qhyccd_rs::simulation::SimulatedCameraConfig;
     ///

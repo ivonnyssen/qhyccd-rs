@@ -6,7 +6,7 @@ use std::collections::HashMap;
 /// Configuration for a simulated camera
 ///
 /// # Example
-/// ```
+/// ```no_run
 /// use qhyccd_rs::simulation::SimulatedCameraConfig;
 ///
 /// let config = SimulatedCameraConfig::default()

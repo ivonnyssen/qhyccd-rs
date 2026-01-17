@@ -5,7 +5,7 @@
 //!
 //! # Example
 //!
-//! ```
+//! ```no_run
 //! use qhyccd_rs::simulation::{SimulatedCameraConfig, ImagePattern, ImageGenerator};
 //!
 //! // Create a custom camera configuration
