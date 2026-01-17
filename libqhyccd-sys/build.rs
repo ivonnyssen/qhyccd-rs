@@ -18,9 +18,20 @@ fn main() {
                 // Fallback to system installation
                 println!("cargo:rustc-link-search=native=/usr/local/lib");
             }
+            // Add Homebrew library paths for libusb
+            let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+            if arch == "aarch64" {
+                // Apple Silicon Homebrew path
+                println!("cargo:rustc-link-search=native=/opt/homebrew/lib");
+            } else {
+                // Intel Mac Homebrew path
+                println!("cargo:rustc-link-search=native=/usr/local/lib");
+            }
             println!("cargo:rustc-link-lib=static=qhyccd");
             // macOS uses libc++ instead of libstdc++
             println!("cargo:rustc-link-lib=dylib=c++");
+            // Link libusb (required by QHYCCD SDK)
+            println!("cargo:rustc-link-lib=dylib=usb-1.0");
         }
         "windows" => {
             let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
