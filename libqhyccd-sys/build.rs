@@ -45,6 +45,7 @@ fn main() {
             };
 
             if let Ok(workspace) = env::var("GITHUB_WORKSPACE") {
+                // SDK is extracted to pkg_win/ at workspace root by qhyccd-sdk-install action
                 let ws_sdk = PathBuf::from(&workspace).join("pkg_win");
                 println!("cargo:rustc-link-search=native={}", ws_sdk.display());
                 println!("cargo:rustc-link-search=native={}", ws_sdk.join(arch_dir).display());
