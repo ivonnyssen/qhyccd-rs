@@ -96,11 +96,10 @@ use libqhyccd_sys::{
     GetQHYCCDFWVersion, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
     GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDParamMinMaxStep,
     GetQHYCCDReadMode, GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion,
-    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, IsQHYCCDCFWPlugged,
-    IsQHYCCDControlAvailable, OpenQHYCCD, ReleaseQHYCCDResource, SetQHYCCDBinMode,
-    SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode,
-    SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64,
-    QHYCCD_SUCCESS,
+    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
+    OpenQHYCCD, ReleaseQHYCCDResource, SetQHYCCDBinMode, SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff,
+    SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive,
+    QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
 };
 
 // These imports are only used when NOT simulating (real hardware path in Sdk::new)
