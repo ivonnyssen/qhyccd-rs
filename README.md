@@ -11,7 +11,7 @@ Current bindings are not complete, but will grow as functionality is needed for 
 
 ```toml
 [dependencies]
-qhyccd-rs = "0.1.7"
+qhyccd-rs = "0.1.8"
 ```
 
 ## Rust version requirements
@@ -111,14 +111,14 @@ Add the feature to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-qhyccd-rs = { version = "0.1.7", features = ["simulation"] }
+qhyccd-rs = { version = "0.1.8", features = ["simulation"] }
 ```
 
 Or use it for development dependencies:
 
 ```toml
 [dev-dependencies]
-qhyccd-rs = { version = "0.1.7", features = ["simulation"] }
+qhyccd-rs = { version = "0.1.8", features = ["simulation"] }
 ```
 
 ### Transparent Usage
