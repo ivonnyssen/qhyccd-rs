@@ -1,3 +1,5 @@
+use std::ffi::c_char;
+
 use crate::mocks::mock_libqhyccd_sys::{
     BeginQHYCCDLive_context, CancelQHYCCDExposingAndReadout_context, CancelQHYCCDExposing_context,
     CloseQHYCCD_context, ExpQHYCCDSingleFrame_context, GetQHYCCDChipInfo_context,
@@ -9,8 +11,8 @@ use crate::mocks::mock_libqhyccd_sys::{
     GetQHYCCDType_context, InitQHYCCD_context, IsQHYCCDControlAvailable_context,
     OpenQHYCCD_context, SetQHYCCDBinMode_context, SetQHYCCDBitsMode_context,
     SetQHYCCDDebayerOnOff_context, SetQHYCCDParam_context, SetQHYCCDReadMode_context,
-    SetQHYCCDResolution_context, SetQHYCCDStreamMode_context, StopQHYCCDLive_context,
-    QHYCCD_SUCCESS,
+    SetQHYCCDResolution_context, SetQHYCCDStreamMode_context, StopQHYCCDLive_context, QHYCCD_ERROR,
+    QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
 };
 use crate::*;
 

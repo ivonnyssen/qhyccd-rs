@@ -1,6 +1,7 @@
 use crate::mocks::mock_libqhyccd_sys::{
     CloseQHYCCD_context, GetQHYCCDParam_context, IsQHYCCDCFWPlugged_context,
-    IsQHYCCDControlAvailable_context, OpenQHYCCD_context, SetQHYCCDParam_context, QHYCCD_SUCCESS,
+    IsQHYCCDControlAvailable_context, OpenQHYCCD_context, SetQHYCCDParam_context, QHYCCD_ERROR,
+    QHYCCD_SUCCESS,
 };
 use crate::*;
 

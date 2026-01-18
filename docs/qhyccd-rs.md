@@ -1303,7 +1303,21 @@ The `libqhyccd-sys` crate links against the system-installed QHYCCD library via:
 ```
 qhyccd-rs/
 ├── src/
-│   ├── lib.rs              # Main library root, all public types
+│   ├── lib.rs              # Main library root (104 lines) - module declarations and re-exports
+│   ├── backend.rs          # Internal backend types (78 lines, pub(crate))
+│   ├── control.rs          # Control enum with 86+ variants (236 lines)
+│   ├── error.rs            # QHYError enum with 27 error types (106 lines)
+│   ├── types.rs            # Public data types (99 lines)
+│   ├── sdk.rs              # Sdk implementation (312 lines)
+│   ├── filter_wheel.rs     # FilterWheel implementation (175 lines)
+│   ├── camera/             # Camera module (7 sub-modules by responsibility)
+│   │   ├── mod.rs          # Camera struct, basic methods (91 lines)
+│   │   ├── lifecycle.rs    # open, close, init, is_open (216 lines)
+│   │   ├── configuration.rs # stream mode, ROI, binning, debayer (261 lines)
+│   │   ├── readout_modes.rs # readout mode queries (215 lines)
+│   │   ├── info.rs         # model, firmware, chip info (343 lines)
+│   │   ├── imaging.rs      # live/single frame capture (496 lines)
+│   │   └── parameters.rs   # parameter get/set/check (315 lines)
 │   ├── mocks.rs            # Mock FFI for testing
 │   ├── simulation/         # Simulation feature
 │   │   ├── mod.rs          # Public API
@@ -1326,12 +1340,27 @@ qhyccd-rs/
     └── build.rs            # Build script (if needed)
 ```
 
-The entire public API is defined in `src/lib.rs` (2866 lines). This includes:
-- All structs: `Sdk`, `Camera`, `FilterWheel`, data types
-- All enums: `Control`, `StreamMode`, `BayerMode`, `QHYError`
-- All implementations
-- Backend selection logic
-- FFI imports (conditional on test/simulation)
+The library is organized into 13 well-defined modules, reducing the original monolithic `lib.rs` from 2,866 lines to just 104 lines. The public API is now composed of:
+
+**Top-level modules** (6 modules + 7 camera sub-modules):
+- `lib.rs`: Module declarations and public re-exports only
+- `control.rs`: Control enum with all camera control parameters
+- `error.rs`: QHYError enum with all error variants using thiserror
+- `types.rs`: Public data types (StreamMode, CCDChipInfo, ImageData, etc.)
+- `sdk.rs`: SDK initialization, camera discovery, resource management
+- `filter_wheel.rs`: Filter wheel control and operations
+- `backend.rs`: Internal backend abstraction (pub(crate) only)
+
+**Camera sub-modules** (organized by functional responsibility):
+- `camera/mod.rs`: Camera struct definition and basic accessors
+- `camera/lifecycle.rs`: Device lifecycle (open, close, init)
+- `camera/configuration.rs`: Stream mode, ROI, binning, debayer settings
+- `camera/readout_modes.rs`: Readout mode queries and selection
+- `camera/info.rs`: Device information (model, firmware, chip specs)
+- `camera/imaging.rs`: Image capture (live mode, single frame)
+- `camera/parameters.rs`: Generic parameter get/set/availability checks
+
+The public API remains 100% backward compatible. All public types are re-exported from `lib.rs`, maintaining the same import paths for library users
 
 ## Glossary
 
