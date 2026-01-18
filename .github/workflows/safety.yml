@@ -20,15 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb (act)
-        if: ${{ env.ACT }}
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
-      - name: Install libusb (GitHub)
-        if: ${{ !env.ACT }}
+      - name: Install libusb (Ubuntu)
+        continue-on-error: true
+        id: cache-libusb-sanitizers
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
           version: 1.0
+      - name: Install libusb (Ubuntu fallback)
+        if: steps.cache-libusb-sanitizers.outcome == 'failure'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - name: Install QHYCCD SDK
         uses: ivonnyssen/qhyccd-sdk-install@v1
         with:
@@ -74,15 +75,16 @@ jobs:
         with:
           toolchain: ${{ env.NIGHTLY }}
           components: miri
-      - name: Install libusb (act)
-        if: ${{ env.ACT }}
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
-      - name: Install libusb (GitHub)
-        if: ${{ !env.ACT }}
+      - name: Install libusb (Ubuntu)
+        continue-on-error: true
+        id: cache-libusb-miri
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
           version: 1.0
+      - name: Install libusb (Ubuntu fallback)
+        if: steps.cache-libusb-miri.outcome == 'failure'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - name: Install QHYCCD SDK
         uses: ivonnyssen/qhyccd-sdk-install@v1
         with:
