@@ -6,6 +6,15 @@ use std::time::Instant;
 
 use super::SimulatedCameraConfig;
 
+/// Metadata for a captured image
+#[derive(Debug, Clone)]
+pub struct ImageMetadata {
+    pub width: u32,
+    pub height: u32,
+    pub bits_per_pixel: u32,
+    pub channels: u32,
+}
+
 /// Runtime state for a simulated camera
 #[derive(Debug)]
 pub struct SimulatedCameraState {
@@ -33,6 +42,10 @@ pub struct SimulatedCameraState {
     pub exposure_start: Option<Instant>,
     /// Exposure duration in microseconds (for single frame mode)
     pub exposure_duration_us: u64,
+    /// Pre-generated image data (available after exposure completes)
+    pub captured_image: Option<Vec<u8>>,
+    /// Dimensions and metadata for the captured image
+    pub captured_image_metadata: Option<ImageMetadata>,
     /// Current filter wheel position (0-indexed)
     pub filter_wheel_position: u32,
     /// Current target temperature for cooler
@@ -85,6 +98,8 @@ impl SimulatedCameraState {
             live_mode_active: false,
             exposure_start: None,
             exposure_duration_us: 1000,
+            captured_image: None,
+            captured_image_metadata: None,
             filter_wheel_position: 0,
             target_temperature: 20.0,
             current_temperature: 20.0,
@@ -159,11 +174,34 @@ impl SimulatedCameraState {
         if let Some(&exposure_us) = self.parameters.get(&Control::Exposure) {
             self.exposure_duration_us = exposure_us as u64;
         }
+
+        // Pre-generate the image immediately when exposure starts
+        let (width, height) = self.get_current_image_dimensions();
+        let bits_per_pixel = self.bit_depth;
+        let channels = self.get_channels();
+
+        let generator = super::ImageGenerator::default();
+        let data = if bits_per_pixel <= 8 {
+            generator.generate_8bit(width, height, channels)
+        } else {
+            generator.generate_16bit(width, height, channels)
+        };
+
+        // Store the generated image and metadata
+        self.captured_image = Some(data);
+        self.captured_image_metadata = Some(ImageMetadata {
+            width,
+            height,
+            bits_per_pixel,
+            channels,
+        });
     }
 
     /// Cancels the current exposure
     pub fn cancel_exposure(&mut self) {
         self.exposure_start = None;
+        self.captured_image = None;
+        self.captured_image_metadata = None;
     }
 
     /// Updates the simulated temperature (call periodically for realistic behavior)

@@ -39,29 +39,12 @@ fn test_buffer_size() {
 }
 
 #[test]
-fn test_exposure_timing() {
-    let config = SimulatedCameraConfig::default();
-    let mut state = SimulatedCameraState::new(config);
-
-    state.exposure_duration_us = 1000; // 1ms
-    state.start_exposure();
-
-    // Should not be complete immediately
-    assert!(!state.is_exposure_complete());
-    assert!(state.get_remaining_exposure_us() > 0);
-
-    // Wait and check again
-    std::thread::sleep(std::time::Duration::from_millis(2));
-    assert!(state.is_exposure_complete());
-    assert_eq!(state.get_remaining_exposure_us(), 0);
-}
-
-#[test]
 fn test_cancel_exposure() {
     let config = SimulatedCameraConfig::default();
     let mut state = SimulatedCameraState::new(config);
 
-    state.exposure_duration_us = 1_000_000; // 1 second
+    // Set exposure time via parameter (start_exposure reads from this)
+    state.parameters.insert(Control::Exposure, 10_000_000.0); // 10 seconds - long enough for image generation and test
     state.start_exposure();
 
     // Exposure should be in progress

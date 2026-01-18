@@ -284,34 +284,45 @@ impl Camera {
                     return Err(eyre!(CameraNotOpenError));
                 }
 
-                // Wait for exposure to complete if one is in progress
-                if state.exposure_start.is_some() && !state.is_exposure_complete() {
-                    // In real camera, this would block. For simulation, we just wait.
-                    while !state.is_exposure_complete() {
-                        std::thread::sleep(std::time::Duration::from_millis(10));
+                // Wait for exposure to complete if one is in progress (like real hardware)
+                // But instead of spin-waiting, sleep for the exact remaining time
+                while !state.is_exposure_complete() {
+                    let remaining_us = state.get_remaining_exposure_us();
+                    if remaining_us > 0 {
+                        drop(state); // Release lock while sleeping
+                        std::thread::sleep(std::time::Duration::from_micros(remaining_us as u64));
+                        // Reacquire lock
+                        state = match &self.backend {
+                            CameraBackend::Simulated { state } => state.write().map_err(|err| {
+                                tracing::error!(error=?err);
+                                eyre!("Could not reacquire write lock on simulated camera state")
+                            })?,
+                            _ => unreachable!(),
+                        };
+                    } else {
+                        break;
                     }
                 }
 
-                let (width, height) = state.get_current_image_dimensions();
-                let bpp = state.bit_depth;
-                let channels = state.get_channels();
-
-                let generator = simulation::ImageGenerator::default();
-                let data = if bpp <= 8 {
-                    generator.generate_8bit(width, height, channels)
-                } else {
-                    generator.generate_16bit(width, height, channels)
-                };
+                // Return the pre-generated image
+                let captured_image = state
+                    .captured_image
+                    .take()
+                    .ok_or_else(|| eyre!("No image available"))?;
+                let metadata = state
+                    .captured_image_metadata
+                    .take()
+                    .ok_or_else(|| eyre!("No image metadata available"))?;
 
                 // Clear exposure state
                 state.exposure_start = None;
 
                 Ok(ImageData {
-                    data,
-                    width,
-                    height,
-                    bits_per_pixel: bpp,
-                    channels,
+                    data: captured_image,
+                    width: metadata.width,
+                    height: metadata.height,
+                    bits_per_pixel: metadata.bits_per_pixel,
+                    channels: metadata.channels,
                 })
             }
         }

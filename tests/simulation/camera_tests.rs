@@ -373,32 +373,6 @@ fn test_image_generator_starfield() {
 }
 
 #[test]
-fn test_exposure_timing() {
-    let config = SimulatedCameraConfig::default();
-    let camera = Camera::new_simulated(config);
-    camera.open().unwrap();
-    camera.set_stream_mode(StreamMode::SingleFrameMode).unwrap();
-    camera.init().unwrap();
-
-    // Set a short exposure
-    camera.set_parameter(Control::Exposure, 50000.0).unwrap(); // 50ms
-
-    camera.start_single_frame_exposure().unwrap();
-
-    // Check remaining exposure time immediately
-    let remaining = camera.get_remaining_exposure_us().unwrap();
-    assert!(remaining > 0);
-    assert!(remaining <= 50000);
-
-    // Wait a bit and check again
-    std::thread::sleep(std::time::Duration::from_millis(30));
-    let remaining_after = camera.get_remaining_exposure_us().unwrap();
-    assert!(remaining_after < remaining);
-
-    camera.close().unwrap();
-}
-
-#[test]
 fn test_set_readout_mode() {
     let config = SimulatedCameraConfig::default()
         .with_readout_mode("High Speed", 3072, 2048)

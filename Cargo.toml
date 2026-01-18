@@ -19,7 +19,7 @@ homepage = "https://github.com/ivonnyssen/qhyccd-rs/wiki"
 
 [features]
 default = []
-simulation = ["rand"]
+simulation = ["rand", "rayon"]
 
 [dependencies]
 libqhyccd-sys = { version = "0.1.4", path = "libqhyccd-sys" }
@@ -29,6 +29,7 @@ tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 educe = "0.6.0"
 rand = { version = "0.9.2", optional = true }
+rayon = { version = "1.10", optional = true }
 
 #to make Zminimal happy
 tracing-attributes = "0.1.28"
