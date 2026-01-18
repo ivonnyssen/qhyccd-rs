@@ -55,8 +55,14 @@ fn test_exposure_timing() {
 
     eprintln!("start_exposure() took: {:?}", start_exposure_elapsed);
     eprintln!("Is exposure complete? {}", state.is_exposure_complete());
-    eprintln!("Remaining exposure time: {} us", state.get_remaining_exposure_us());
-    eprintln!("Exposure duration set to: {} us", state.exposure_duration_us);
+    eprintln!(
+        "Remaining exposure time: {} us",
+        state.get_remaining_exposure_us()
+    );
+    eprintln!(
+        "Exposure duration set to: {} us",
+        state.exposure_duration_us
+    );
 
     // Should not be complete immediately
     assert!(!state.is_exposure_complete());

@@ -305,9 +305,13 @@ impl Camera {
                 }
 
                 // Return the pre-generated image
-                let captured_image = state.captured_image.take()
+                let captured_image = state
+                    .captured_image
+                    .take()
                     .ok_or_else(|| eyre!("No image available"))?;
-                let metadata = state.captured_image_metadata.take()
+                let metadata = state
+                    .captured_image_metadata
+                    .take()
                     .ok_or_else(|| eyre!("No image metadata available"))?;
 
                 // Clear exposure state
