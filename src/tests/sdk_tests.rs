@@ -7,6 +7,7 @@ use crate::*;
 
 use crate::QHYError::{GetCameraIdError, InitSDKError, ScanQHYCCDError};
 
+#[cfg(not(feature = "simulation"))]
 fn new_sdk() -> Sdk {
     let ctx_init = InitQHYCCDResource_context();
     ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
@@ -58,6 +59,7 @@ fn new_sdk() -> Sdk {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn new_success() {
     //given
     //when
@@ -73,6 +75,7 @@ fn new_success() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn version_success() {
     //given
     let ctx_version = GetQHYCCDSDKVersion_context();
@@ -108,6 +111,7 @@ fn version_success() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn version_fail() {
     //given
     let ctx_version = GetQHYCCDSDKVersion_context();
@@ -135,6 +139,7 @@ fn version_fail() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn filter_wheels_success() {
     //given
     //filter wheels context is set up in new_sdk()
@@ -151,6 +156,7 @@ fn filter_wheels_success() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn new_init_fail() {
     //given
     let ctx_init = InitQHYCCDResource_context();
@@ -171,6 +177,7 @@ fn new_init_fail() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn new_scan_fail() {
     //given
     let ctx_init = InitQHYCCDResource_context();
@@ -187,6 +194,7 @@ fn new_scan_fail() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn new_get_id_fail() {
     //given
     let ctx_init = InitQHYCCDResource_context();
@@ -211,6 +219,7 @@ fn new_get_id_fail() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn new_get_id_invalid_utf8_fail() {
     //given
     let ctx_init = InitQHYCCDResource_context();
@@ -239,6 +248,7 @@ fn new_get_id_invalid_utf8_fail() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn new_with_broken_filter_wheel() {
     let ctx_init = InitQHYCCDResource_context();
     ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);
@@ -302,6 +312,7 @@ fn new_with_broken_filter_wheel() {
 }
 
 #[test]
+#[cfg(not(feature = "simulation"))]
 fn new_fail_close() {
     let ctx_init = InitQHYCCDResource_context();
     ctx_init.expect().times(1).return_const_st(QHYCCD_SUCCESS);

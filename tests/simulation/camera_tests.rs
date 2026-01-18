@@ -249,6 +249,43 @@ fn test_simulated_sdk_add_camera() {
 }
 
 #[test]
+fn test_sdk_new_with_default_simulated_camera() {
+    // Test that Sdk::new() automatically creates a simulated SDK with a default camera
+    let sdk = Sdk::new().expect("Failed to create SDK");
+
+    // Should have exactly 1 camera
+    assert_eq!(sdk.cameras().count(), 1);
+
+    let camera = sdk.cameras().next().unwrap();
+    assert_eq!(camera.id(), "SIM-QHY178M");
+    assert!(camera.is_simulated());
+
+    // Should have exactly 1 filter wheel (7 positions)
+    assert_eq!(sdk.filter_wheels().count(), 1);
+
+    let filter_wheel = sdk.filter_wheels().next().unwrap();
+
+    // Open the camera to verify it has cooler support
+    camera.open().expect("Failed to open camera");
+
+    // Verify camera has cooler support
+    assert!(
+        camera.is_control_available(Control::Cooler).is_some(),
+        "Camera should have cooler support"
+    );
+
+    camera.close().expect("Failed to close camera");
+
+    // Open and verify filter wheel has 7 positions
+    filter_wheel.open().expect("Failed to open filter wheel");
+    let num_filters = filter_wheel
+        .get_number_of_filters()
+        .expect("Failed to get number of filters");
+    assert_eq!(num_filters, 7, "Filter wheel should have 7 positions");
+    filter_wheel.close().expect("Failed to close filter wheel");
+}
+
+#[test]
 fn test_simulated_sdk_add_camera_with_filter_wheel() {
     let mut sdk = Sdk::new_simulated();
 
