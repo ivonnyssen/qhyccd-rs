@@ -1,8 +1,8 @@
-use super::*;
 use crate::mocks::mock_libqhyccd_sys::{
     CloseQHYCCD_context, GetQHYCCDParam_context, IsQHYCCDCFWPlugged_context,
     IsQHYCCDControlAvailable_context, OpenQHYCCD_context, SetQHYCCDParam_context, QHYCCD_SUCCESS,
 };
+use crate::*;
 
 const TEST_HANDLE: *const std::ffi::c_void = 0xdeadbeef as *const std::ffi::c_void;
 

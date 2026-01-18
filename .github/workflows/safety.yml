@@ -20,7 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb
+      - name: Install libusb (act)
+        if: ${{ env.ACT }}
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - name: Install libusb (GitHub)
+        if: ${{ !env.ACT }}
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
@@ -70,7 +74,11 @@ jobs:
         with:
           toolchain: ${{ env.NIGHTLY }}
           components: miri
-      - name: Install libusb
+      - name: Install libusb (act)
+        if: ${{ env.ACT }}
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - name: Install libusb (GitHub)
+        if: ${{ !env.ACT }}
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
@@ -80,6 +88,9 @@ jobs:
         with:
           version: "25.09.29"
       - name: cargo miri test
-        run: cargo miri test --all-features
+        # Note: simulation feature excluded because simulation tests use thread::sleep
+        # and image generation which are too slow under miri's interpreter.
+        # Simulation code is pure safe Rust with no unsafe blocks anyway.
+        run: cargo miri test
         env:
           MIRIFLAGS: ""

@@ -10,12 +10,16 @@ keywords = ["qhyccd", "astronomy", "camera"]
 repository = "https://github.com/ivonnyssen/qhyccd-rs"
 documentation = "https://docs.rs/qhyccd-rs"
 description = """
-Rust bindings for the QHYCCD SDK. 
+Rust bindings for the QHYCCD SDK.
 This crate provides a safe interface to the QHYCCD SDK for controlling QHYCCD cameras, filter wheels and focusers.
 The libqhyccd-sys crate provides the raw FFI bindings. It uses tracing for logging and eyre for error handling.
 """
 categories = ["aerospace", "api-bindings"]
 homepage = "https://github.com/ivonnyssen/qhyccd-rs/wiki"
+
+[features]
+default = []
+simulation = ["rand"]
 
 [dependencies]
 libqhyccd-sys = { version = "0.1.4", path = "libqhyccd-sys" }
@@ -24,6 +28,7 @@ thiserror = "2.0.17"
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 educe = "0.6.0"
+rand = { version = "0.8", optional = true }
 
 #to make Zminimal happy
 tracing-attributes = "0.1.28"
