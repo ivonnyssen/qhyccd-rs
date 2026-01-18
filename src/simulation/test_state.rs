@@ -43,15 +43,27 @@ fn test_exposure_timing() {
     let config = SimulatedCameraConfig::default();
     let mut state = SimulatedCameraState::new(config);
 
-    state.exposure_duration_us = 1000; // 1ms
+    // Set exposure time via parameter (start_exposure reads from this)
+    state.parameters.insert(Control::Exposure, 100_000.0); // 100ms
+
+    eprintln!("\n=== Timing Test Debug ===");
+    eprintln!("Expected exposure duration: 100,000 us (100 ms)");
+
+    let start = std::time::Instant::now();
     state.start_exposure();
+    let start_exposure_elapsed = start.elapsed();
+
+    eprintln!("start_exposure() took: {:?}", start_exposure_elapsed);
+    eprintln!("Is exposure complete? {}", state.is_exposure_complete());
+    eprintln!("Remaining exposure time: {} us", state.get_remaining_exposure_us());
+    eprintln!("Exposure duration set to: {} us", state.exposure_duration_us);
 
     // Should not be complete immediately
     assert!(!state.is_exposure_complete());
     assert!(state.get_remaining_exposure_us() > 0);
 
     // Wait and check again
-    std::thread::sleep(std::time::Duration::from_millis(2));
+    std::thread::sleep(std::time::Duration::from_millis(110));
     assert!(state.is_exposure_complete());
     assert_eq!(state.get_remaining_exposure_us(), 0);
 }
@@ -61,7 +73,8 @@ fn test_cancel_exposure() {
     let config = SimulatedCameraConfig::default();
     let mut state = SimulatedCameraState::new(config);
 
-    state.exposure_duration_us = 1_000_000; // 1 second
+    // Set exposure time via parameter (start_exposure reads from this)
+    state.parameters.insert(Control::Exposure, 10_000_000.0); // 10 seconds - long enough for image generation and test
     state.start_exposure();
 
     // Exposure should be in progress

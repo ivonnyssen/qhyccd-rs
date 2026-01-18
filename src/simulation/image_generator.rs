@@ -1,6 +1,7 @@
 //! Image generation utilities for simulated cameras
 
 use rand::Rng;
+use rayon::prelude::*;
 
 /// Pattern type for generated images
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -138,31 +139,39 @@ impl ImageGenerator {
         &self,
         data: &mut [u8],
         width: u32,
-        height: u32,
+        _height: u32,
         channels: u32,
-        rng: &mut R,
+        _rng: &mut R,
     ) {
         let noise_range = (65535.0 * self.noise_level) as i32;
+        let base_level = self.base_level;
+        let row_size = (width * channels) as usize * 2;
 
-        for y in 0..height {
-            for x in 0..width {
-                let gradient = ((x as f64 / width as f64) * 50000.0) as u16;
-                let noise = if noise_range > 0 {
-                    rng.random_range(-noise_range..=noise_range)
-                } else {
-                    0
-                };
-                let value =
-                    (self.base_level as i32 + gradient as i32 + noise).clamp(0, 65535) as u16;
+        // Process rows in parallel
+        data.par_chunks_mut(row_size)
+            .enumerate()
+            .for_each(|(_y, row)| {
+                // Each thread gets its own RNG
+                let mut thread_rng = rand::rng();
 
-                let idx = ((y * width + x) * channels) as usize * 2;
-                let bytes = value.to_le_bytes();
-                for c in 0..channels as usize {
-                    data[idx + c * 2] = bytes[0];
-                    data[idx + c * 2 + 1] = bytes[1];
+                for x in 0..width {
+                    let gradient = ((x as f64 / width as f64) * 50000.0) as u16;
+                    let noise = if noise_range > 0 {
+                        thread_rng.random_range(-noise_range..=noise_range)
+                    } else {
+                        0
+                    };
+                    let value =
+                        (base_level as i32 + gradient as i32 + noise).clamp(0, 65535) as u16;
+
+                    let idx = (x * channels) as usize * 2;
+                    let bytes = value.to_le_bytes();
+                    for c in 0..channels as usize {
+                        row[idx + c * 2] = bytes[0];
+                        row[idx + c * 2 + 1] = bytes[1];
+                    }
                 }
-            }
-        }
+            });
     }
 
     fn generate_starfield_8bit<R: Rng>(

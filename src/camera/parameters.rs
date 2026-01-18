@@ -123,6 +123,7 @@ impl Camera {
                             Err(eyre!(error))
                         }
                     }
+                    Control::OutputDataActualBits => Ok(state.bit_depth as f64),
                     _ => state.parameters.get(&control).copied().ok_or_else(|| {
                         let error = GetParameterError { control };
                         tracing::error!(error = ?error);
