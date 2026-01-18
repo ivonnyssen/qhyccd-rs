@@ -1,3 +1,5 @@
+#![allow(unused_unsafe)]
+
 use eyre::{eyre, Result};
 
 use crate::backend::{read_lock, CameraBackend, QHYCCDHandle};
@@ -5,9 +7,6 @@ use crate::QHYError::*;
 
 #[cfg(feature = "simulation")]
 use crate::CCDChipArea;
-
-#[cfg(feature = "simulation")]
-use crate::simulation;
 
 #[cfg(not(test))]
 use libqhyccd_sys::{CloseQHYCCD, InitQHYCCD, OpenQHYCCD, QHYCCD_SUCCESS};

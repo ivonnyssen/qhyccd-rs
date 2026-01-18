@@ -1,3 +1,5 @@
+#![allow(unused_unsafe)]
+
 use eyre::{eyre, Result};
 
 use crate::backend::{read_lock, CameraBackend};

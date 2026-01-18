@@ -1,10 +1,7 @@
 use std::sync::{Arc, RwLock};
 
-use eyre::{eyre, Result, WrapErr};
-
 #[cfg(feature = "simulation")]
 use crate::simulation::SimulatedCameraState;
-use crate::QHYError::CameraNotOpenError;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub(crate) struct QHYCCDHandle {

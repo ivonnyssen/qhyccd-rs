@@ -1,24 +1,26 @@
-use std::ffi::{c_char, CStr};
-
 use eyre::{eyre, Result};
-use tracing::error;
 
 use crate::{Camera, FilterWheel, QHYError::*, SDKVersion};
+
+#[cfg(not(feature = "simulation"))]
+use std::ffi::{c_char, CStr};
 
 #[cfg(feature = "simulation")]
 use crate::simulation;
 
 // These imports are only used when NOT simulating (real hardware path in Sdk::new)
 #[cfg(all(not(test), not(feature = "simulation")))]
-use libqhyccd_sys::{GetQHYCCDId, InitQHYCCDResource, ScanQHYCCD};
+use libqhyccd_sys::{GetQHYCCDId, InitQHYCCDResource, ScanQHYCCD, QHYCCD_ERROR};
 
 #[cfg(not(test))]
-use libqhyccd_sys::{GetQHYCCDSDKVersion, ReleaseQHYCCDResource, QHYCCD_ERROR, QHYCCD_SUCCESS};
+use libqhyccd_sys::{GetQHYCCDSDKVersion, ReleaseQHYCCDResource, QHYCCD_SUCCESS};
+
+#[cfg(all(test, not(feature = "simulation")))]
+use crate::mocks::mock_libqhyccd_sys::{GetQHYCCDId, InitQHYCCDResource, ScanQHYCCD, QHYCCD_ERROR};
 
 #[cfg(test)]
 use crate::mocks::mock_libqhyccd_sys::{
-    GetQHYCCDId, GetQHYCCDSDKVersion, InitQHYCCDResource, ReleaseQHYCCDResource, ScanQHYCCD,
-    QHYCCD_ERROR, QHYCCD_SUCCESS,
+    GetQHYCCDSDKVersion, ReleaseQHYCCDResource, QHYCCD_SUCCESS,
 };
 
 #[non_exhaustive]

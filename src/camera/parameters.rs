@@ -1,10 +1,9 @@
+#![allow(unused_unsafe)]
+
 use eyre::{eyre, Result};
 
 use crate::backend::{read_lock, CameraBackend};
 use crate::{Control, QHYError::*};
-
-#[cfg(feature = "simulation")]
-use crate::simulation;
 
 #[cfg(not(test))]
 use libqhyccd_sys::{

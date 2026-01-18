@@ -1,12 +1,11 @@
+#![allow(unused_unsafe)]
+
 use std::ffi::{c_char, CStr};
 
 use eyre::{eyre, Result};
 
 use crate::backend::{read_lock, CameraBackend};
 use crate::QHYError::*;
-
-#[cfg(feature = "simulation")]
-use crate::simulation;
 
 #[cfg(not(test))]
 use libqhyccd_sys::{

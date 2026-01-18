@@ -60,7 +60,7 @@ impl ImageGenerator {
         let pixel_count = (width * height) as usize;
         let total_size = pixel_count * channels as usize;
         let mut data = vec![0u8; total_size];
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         match self.pattern {
             ImagePattern::Gradient => {
@@ -85,7 +85,7 @@ impl ImageGenerator {
         let pixel_count = (width * height) as usize;
         let total_size = pixel_count * channels as usize * 2; // 2 bytes per sample
         let mut data = vec![0u8; total_size];
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         match self.pattern {
             ImagePattern::Gradient => {
@@ -120,7 +120,7 @@ impl ImageGenerator {
             for x in 0..width {
                 let gradient = ((x as f64 / width as f64) * 200.0) as u8;
                 let noise = if noise_range > 0 {
-                    rng.gen_range(-noise_range..=noise_range)
+                    rng.random_range(-noise_range..=noise_range)
                 } else {
                     0
                 };
@@ -148,7 +148,7 @@ impl ImageGenerator {
             for x in 0..width {
                 let gradient = ((x as f64 / width as f64) * 50000.0) as u16;
                 let noise = if noise_range > 0 {
-                    rng.gen_range(-noise_range..=noise_range)
+                    rng.random_range(-noise_range..=noise_range)
                 } else {
                     0
                 };
@@ -179,7 +179,7 @@ impl ImageGenerator {
 
         for pixel in data.iter_mut() {
             let noise = if noise_range > 0 {
-                rng.gen_range(-noise_range..=noise_range)
+                rng.random_range(-noise_range..=noise_range)
             } else {
                 0
             };
@@ -189,10 +189,10 @@ impl ImageGenerator {
         // Add stars
         let num_stars = ((width * height) as f64 * 0.001) as usize; // ~0.1% coverage
         for _ in 0..num_stars {
-            let x = rng.gen_range(1..width - 1);
-            let y = rng.gen_range(1..height - 1);
-            let brightness = rng.gen_range(150..255) as u8;
-            let size = rng.gen_range(1..=3);
+            let x = rng.random_range(1..width - 1);
+            let y = rng.random_range(1..height - 1);
+            let brightness = rng.random_range(150..255) as u8;
+            let size = rng.random_range(1..=3);
 
             self.draw_star_8bit(data, width, height, channels, x, y, brightness, size);
         }
@@ -212,7 +212,7 @@ impl ImageGenerator {
         for y in 0..height {
             for x in 0..width {
                 let noise = if noise_range > 0 {
-                    rng.gen_range(-noise_range..=noise_range)
+                    rng.random_range(-noise_range..=noise_range)
                 } else {
                     0
                 };
@@ -230,10 +230,10 @@ impl ImageGenerator {
         // Add stars
         let num_stars = ((width * height) as f64 * 0.001) as usize;
         for _ in 0..num_stars {
-            let x = rng.gen_range(2..width - 2);
-            let y = rng.gen_range(2..height - 2);
-            let brightness = rng.gen_range(40000..65535) as u16;
-            let size = rng.gen_range(1..=3);
+            let x = rng.random_range(2..width - 2);
+            let y = rng.random_range(2..height - 2);
+            let brightness = rng.random_range(40000..65535) as u16;
+            let size = rng.random_range(1..=3);
 
             self.draw_star_16bit(data, width, height, channels, x, y, brightness, size);
         }
@@ -332,7 +332,7 @@ impl ImageGenerator {
         for y in 0..height {
             for x in 0..width {
                 let noise = if noise_range > 0 {
-                    rng.gen_range(-noise_range..=noise_range)
+                    rng.random_range(-noise_range..=noise_range)
                 } else {
                     0
                 };
@@ -359,7 +359,7 @@ impl ImageGenerator {
         for y in 0..height {
             for x in 0..width {
                 let noise = if noise_range > 0 {
-                    rng.gen_range(-noise_range..=noise_range)
+                    rng.random_range(-noise_range..=noise_range)
                 } else {
                     0
                 };
@@ -404,7 +404,7 @@ impl ImageGenerator {
                 let ring_mod = if ring == 0 { 20i16 } else { -20i16 };
 
                 let noise = if noise_range > 0 {
-                    rng.gen_range(-noise_range..=noise_range)
+                    rng.random_range(-noise_range..=noise_range)
                 } else {
                     0
                 };
@@ -447,7 +447,7 @@ impl ImageGenerator {
                 let ring_mod: i32 = if ring == 0 { 5000 } else { -5000 };
 
                 let noise = if noise_range > 0 {
-                    rng.gen_range(-noise_range..=noise_range)
+                    rng.random_range(-noise_range..=noise_range)
                 } else {
                     0
                 };

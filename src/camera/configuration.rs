@@ -1,10 +1,9 @@
+#![allow(unused_unsafe)]
+
 use eyre::{eyre, Result};
 
 use crate::backend::{read_lock, CameraBackend};
-use crate::{CCDChipArea, StreamMode, QHYError::*};
-
-#[cfg(feature = "simulation")]
-use crate::simulation;
+use crate::{CCDChipArea, QHYError::*, StreamMode};
 
 #[cfg(not(test))]
 use libqhyccd_sys::{
