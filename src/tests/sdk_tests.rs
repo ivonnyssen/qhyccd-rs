@@ -1,7 +1,9 @@
+use std::ffi::{c_char, CStr};
+
 use crate::mocks::mock_libqhyccd_sys::{
     CloseQHYCCD_context, GetQHYCCDId_context, GetQHYCCDSDKVersion_context,
     InitQHYCCDResource_context, IsQHYCCDCFWPlugged_context, OpenQHYCCD_context,
-    ReleaseQHYCCDResource_context, ScanQHYCCD_context, QHYCCD_SUCCESS,
+    ReleaseQHYCCDResource_context, ScanQHYCCD_context, QHYCCD_ERROR, QHYCCD_SUCCESS,
 };
 use crate::*;
 
