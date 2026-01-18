@@ -32,7 +32,7 @@ jobs:
         if: steps.cache-libusb-nightly.outcome == 'failure'
         run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@v1
+        uses: ivonnyssen/qhyccd-sdk-install@v2
         with:
           version: "25.09.29"
       - name: cargo generate-lockfile
