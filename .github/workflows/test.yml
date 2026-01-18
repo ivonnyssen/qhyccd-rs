@@ -29,34 +29,24 @@ jobs:
         toolchain: [stable, beta]
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb (Ubuntu/act)
-        if: matrix.os == 'ubuntu-latest' && env.ACT
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
-      - name: Install libusb (Ubuntu/GitHub)
-        if: matrix.os == 'ubuntu-latest' && !env.ACT
+      - name: Install libusb (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        continue-on-error: true
+        id: cache-libusb
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
           version: 1.0
+      - name: Install libusb (Ubuntu fallback)
+        if: matrix.os == 'ubuntu-latest' && steps.cache-libusb.outcome == 'failure'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - name: Install libusb (macOS)
         if: matrix.os == 'macos-latest'
         run: brew install libusb
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@v1
+        uses: ivonnyssen/qhyccd-sdk-install@v2
         with:
           version: "25.09.29"
-      - name: Add QHYCCD to PATH (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "${{ github.workspace }}\pkg_win\x64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Add QHYCCD to PATH (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          if [[ $(uname -m) == "arm64" ]]; then
-            echo "${{ github.workspace }}/sdk_mac_arm_25.09.29" >> $GITHUB_PATH
-          else
-            echo "${{ github.workspace }}/sdk_macMix_25.09.29" >> $GITHUB_PATH
-          fi
       - name: Install ${{ matrix.toolchain }}
         uses: dtolnay/rust-toolchain@master
         with:
@@ -98,17 +88,18 @@ jobs:
     name: ubuntu / stable / minimal-versions
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb (act)
-        if: ${{ env.ACT }}
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
-      - name: Install libusb (GitHub)
-        if: ${{ !env.ACT }}
+      - name: Install libusb (Ubuntu)
+        continue-on-error: true
+        id: cache-libusb-minimal
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
           version: 1.0
+      - name: Install libusb (Ubuntu fallback)
+        if: steps.cache-libusb-minimal.outcome == 'failure'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@v1
+        uses: ivonnyssen/qhyccd-sdk-install@v2
         with:
           version: "25.09.29"
       - name: Install stable
@@ -147,17 +138,18 @@ jobs:
     name: ubuntu / stable / coverage
     steps:
       - uses: actions/checkout@v6
-      - name: Install libusb (act)
-        if: ${{ env.ACT }}
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
-      - name: Install libusb (GitHub)
-        if: ${{ !env.ACT }}
+      - name: Install libusb (Ubuntu)
+        continue-on-error: true
+        id: cache-libusb-coverage
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
           version: 1.0
+      - name: Install libusb (Ubuntu fallback)
+        if: steps.cache-libusb-coverage.outcome == 'failure'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@v1
+        uses: ivonnyssen/qhyccd-sdk-install@v2
         with:
           version: "25.09.29"
       - name: Install stable

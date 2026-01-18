@@ -21,17 +21,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
-      - name: Install libusb (act)
-        if: ${{ env.ACT }}
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
-      - name: Install libusb (GitHub)
-        if: ${{ !env.ACT }}
+      - name: Install libusb (Ubuntu)
+        continue-on-error: true
+        id: cache-libusb-nightly
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libusb-1.0-0-dev
           version: 1.0
+      - name: Install libusb (Ubuntu fallback)
+        if: steps.cache-libusb-nightly.outcome == 'failure'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - name: Install QHYCCD SDK
-        uses: ivonnyssen/qhyccd-sdk-install@v1
+        uses: ivonnyssen/qhyccd-sdk-install@v2
         with:
           version: "25.09.29"
       - name: cargo generate-lockfile
