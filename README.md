@@ -100,3 +100,100 @@ Download and install the QHYCCD SDK from the [official website](https://www.qhyc
 [src/bin/LiveFrameMode.rs](https://github.com/ivonnyssen/qhyccd-rs/blob/main/src/bin/LiveFrameMode.rs)
 
 [src/bin/SingleFrameMode.rs](https://github.com/ivonnyssen/qhyccd-rs/blob/main/src/bin/SingleFrameMode.rs)
+
+## Simulation Feature
+
+The `simulation` feature enables testing and development without physical hardware. When enabled, `Sdk::new()` automatically provides a simulated camera environment with realistic behavior.
+
+### Enable Simulation
+
+Add the feature to your `Cargo.toml`:
+
+```toml
+[dependencies]
+qhyccd-rs = { version = "0.1.7", features = ["simulation"] }
+```
+
+Or use it for development dependencies:
+
+```toml
+[dev-dependencies]
+qhyccd-rs = { version = "0.1.7", features = ["simulation"] }
+```
+
+### Transparent Usage
+
+With the simulation feature enabled, your code works identically whether using real or simulated hardware:
+
+```rust
+use qhyccd_rs::Sdk;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Same code for both real and simulated cameras
+    let sdk = Sdk::new()?;
+
+    let cameras = sdk.cameras();
+    println!("Found {} camera(s)", cameras.count());
+
+    if let Some(camera) = cameras.first() {
+        println!("Camera: {}", camera.id()?);
+
+        // Check for filter wheel
+        let filter_wheels = sdk.filter_wheels();
+        if let Some(fw) = filter_wheels.first() {
+            fw.open()?;
+            println!("Filter wheel with {} positions", fw.get_number_of_filters()?);
+            fw.close()?;
+        }
+    }
+
+    Ok(())
+}
+```
+
+### Default Simulated Camera
+
+When using the simulation feature, `Sdk::new()` automatically provides:
+
+- **Camera**: QHY178M-Simulated (`SIM-QHY178M`)
+  - 3072x2048 resolution
+  - 16-bit depth
+  - Cooler support for temperature control
+  - Multiple readout modes
+  - Gain, offset, and exposure controls
+
+- **Filter Wheel**: 7-position CFW
+  - Accessible via `sdk.filter_wheels()`
+  - Full control API support
+
+### Custom Simulated Cameras
+
+For advanced use cases requiring custom camera configurations, use `Sdk::new_simulated()` and `add_simulated_camera()`:
+
+```rust
+use qhyccd_rs::{Sdk, simulation::SimulatedCameraConfig};
+
+let mut sdk = Sdk::new_simulated();
+
+// Add custom camera with specific configuration
+let config = SimulatedCameraConfig::default()
+    .with_id("CUSTOM-CAM-001")
+    .with_model("Custom Camera Model")
+    .with_filter_wheel(5)  // 5-position wheel
+    .with_cooler();
+
+sdk.add_simulated_camera(config);
+```
+
+### Building with Simulation
+
+```bash
+# Build with simulation
+cargo build --features simulation
+
+# Run tests with simulation
+cargo test --features simulation
+
+# Run examples with simulation
+cargo run --features simulation --bin SingleFrameMode
+```

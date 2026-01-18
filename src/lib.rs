@@ -10,6 +10,63 @@
 //! let sdk_version = sdk.version().expect("get_sdk_version failed");
 //! println!("SDK version: {:?}", sdk_version);
 //! ```
+//!
+//! # Simulation Feature
+//!
+//! The `simulation` feature enables development and testing without physical hardware. When enabled,
+//! [`Sdk::new()`] automatically provides a simulated camera environment that behaves like real hardware.
+//!
+//! ## Enabling Simulation
+//!
+//! Add the feature to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! qhyccd-rs = { version = "0.1.7", features = ["simulation"] }
+//! ```
+//!
+//! ## Transparent Usage
+//!
+//! With simulation enabled, your code works identically for both real and simulated cameras:
+//!
+//! ```no_run
+//! use qhyccd_rs::Sdk;
+//!
+//! // Same code works with or without the simulation feature
+//! let sdk = Sdk::new().expect("Failed to initialize SDK");
+//! let cameras = sdk.cameras();
+//! println!("Found {} camera(s)", cameras.count());
+//! ```
+//!
+//! ## Default Simulated Camera
+//!
+//! When compiled with the `simulation` feature, [`Sdk::new()`] automatically provides:
+//!
+//! - **Camera**: QHY178M-Simulated (`SIM-QHY178M`)
+//!   - 3072x2048 resolution, 16-bit depth
+//!   - Cooler support for temperature control
+//!   - Full control API (gain, offset, exposure, etc.)
+//!
+//! - **Filter Wheel**: 7-position CFW
+//!   - Accessible via [`Sdk::filter_wheels()`]
+//!   - Complete control API support
+//!
+//! ## Custom Simulated Cameras
+//!
+//! For advanced use cases, use [`Sdk::new_simulated()`] and [`Sdk::add_simulated_camera()`]:
+//!
+//! ```
+//! # #[cfg(feature = "simulation")]
+//! # {
+//! use qhyccd_rs::{Sdk, simulation::SimulatedCameraConfig};
+//!
+//! let mut sdk = Sdk::new_simulated();
+//! let config = SimulatedCameraConfig::default()
+//!     .with_id("CUSTOM-CAM")
+//!     .with_filter_wheel(5);
+//! sdk.add_simulated_camera(config);
+//! # }
+//! ```
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
 use std::ffi::{c_char, CStr};
@@ -36,15 +93,18 @@ use simulation::SimulatedCameraState;
 use libqhyccd_sys::{
     BeginQHYCCDLive, CancelQHYCCDExposing, CancelQHYCCDExposingAndReadout, CloseQHYCCD,
     ExpQHYCCDSingleFrame, GetQHYCCDChipInfo, GetQHYCCDEffectiveArea, GetQHYCCDExposureRemaining,
-    GetQHYCCDFWVersion, GetQHYCCDId, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
+    GetQHYCCDFWVersion, GetQHYCCDLiveFrame, GetQHYCCDMemLength, GetQHYCCDModel,
     GetQHYCCDNumberOfReadModes, GetQHYCCDOverScanArea, GetQHYCCDParam, GetQHYCCDParamMinMaxStep,
     GetQHYCCDReadMode, GetQHYCCDReadModeName, GetQHYCCDReadModeResolution, GetQHYCCDSDKVersion,
-    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, InitQHYCCDResource, IsQHYCCDCFWPlugged,
-    IsQHYCCDControlAvailable, OpenQHYCCD, ReleaseQHYCCDResource, ScanQHYCCD, SetQHYCCDBinMode,
-    SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDParam, SetQHYCCDReadMode,
-    SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive, QHYCCD_ERROR, QHYCCD_ERROR_F64,
-    QHYCCD_SUCCESS,
+    GetQHYCCDSingleFrame, GetQHYCCDType, InitQHYCCD, IsQHYCCDCFWPlugged, IsQHYCCDControlAvailable,
+    OpenQHYCCD, ReleaseQHYCCDResource, SetQHYCCDBinMode, SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff,
+    SetQHYCCDParam, SetQHYCCDReadMode, SetQHYCCDResolution, SetQHYCCDStreamMode, StopQHYCCDLive,
+    QHYCCD_ERROR, QHYCCD_ERROR_F64, QHYCCD_SUCCESS,
 };
+
+// These imports are only used when NOT simulating (real hardware path in Sdk::new)
+#[cfg(all(not(test), not(feature = "simulation")))]
+use libqhyccd_sys::{GetQHYCCDId, InitQHYCCDResource, ScanQHYCCD};
 
 #[cfg(test)]
 use crate::mocks::mock_libqhyccd_sys::{
@@ -538,6 +598,7 @@ impl Sdk {
     /// let sdk = Sdk::new();
     /// assert!(sdk.is_ok());
     /// ```
+    #[cfg(not(feature = "simulation"))]
     pub fn new() -> Result<Self> {
         match unsafe { InitQHYCCDResource() } {
             QHYCCD_SUCCESS => {
@@ -621,6 +682,41 @@ impl Sdk {
                 Err(eyre!(error))
             }
         }
+    }
+
+    /// Creates a new SDK instance with automatic simulation when the feature is enabled
+    ///
+    /// When compiled with the `simulation` feature, this automatically returns a simulated
+    /// SDK with a default camera (QHY178M-Simulated) that includes a 7-position filter wheel
+    /// and cooler support. This allows the same code to work seamlessly in both real and
+    /// simulated environments.
+    ///
+    /// For custom simulated camera configurations, use `new_simulated()` and
+    /// `add_simulated_camera()` instead.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use qhyccd_rs::Sdk;
+    ///
+    /// // Same code works with or without simulation feature
+    /// let sdk = Sdk::new().expect("Failed to initialize SDK");
+    /// let cameras = sdk.cameras();
+    /// println!("Found {} camera(s)", cameras.count());
+    /// ```
+    #[cfg(feature = "simulation")]
+    pub fn new() -> Result<Self> {
+        let mut sdk = Self::new_simulated();
+
+        // Add default simulated camera with 7-position filter wheel and cooler
+        let config = simulation::SimulatedCameraConfig::default()
+            .with_id("SIM-QHY178M")
+            .with_model("QHY178M-Simulated")
+            .with_filter_wheel(7)
+            .with_cooler();
+
+        sdk.add_simulated_camera(config);
+
+        Ok(sdk)
     }
 
     /// Creates a new SDK instance for simulation without scanning for real hardware
