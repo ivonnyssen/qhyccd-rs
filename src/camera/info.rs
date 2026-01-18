@@ -1,4 +1,3 @@
-
 use std::ffi::{c_char, CStr};
 
 use eyre::{eyre, Result};

@@ -1,4 +1,3 @@
-
 use eyre::{eyre, Result};
 
 use crate::backend::{read_lock, CameraBackend};
