@@ -1,4 +1,3 @@
-#![allow(unused_unsafe)]
 
 use eyre::{eyre, Result};
 
@@ -16,6 +15,12 @@ use crate::mocks::mock_libqhyccd_sys::{
     SetQHYCCDBinMode, SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDReadMode,
     SetQHYCCDResolution, SetQHYCCDStreamMode, QHYCCD_SUCCESS,
 };
+
+#[cfg(all(feature = "simulation", not(test)))]
+use libqhyccd_sys::QHYCCD_ERROR;
+
+#[cfg(all(feature = "simulation", test))]
+use crate::mocks::mock_libqhyccd_sys::QHYCCD_ERROR;
 
 use super::Camera;
 

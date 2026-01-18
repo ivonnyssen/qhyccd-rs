@@ -1,4 +1,3 @@
-#![allow(unused_unsafe)]
 
 use eyre::{eyre, Result};
 

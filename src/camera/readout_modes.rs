@@ -1,4 +1,3 @@
-#![allow(unused_unsafe)]
 
 use std::ffi::{c_char, CStr};
 
