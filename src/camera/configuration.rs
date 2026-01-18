@@ -8,13 +8,13 @@ use crate::{CCDChipArea, QHYError::*, StreamMode};
 #[cfg(not(test))]
 use libqhyccd_sys::{
     SetQHYCCDBinMode, SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDReadMode,
-    SetQHYCCDResolution, SetQHYCCDStreamMode, QHYCCD_ERROR, QHYCCD_SUCCESS,
+    SetQHYCCDResolution, SetQHYCCDStreamMode, QHYCCD_SUCCESS,
 };
 
 #[cfg(test)]
 use crate::mocks::mock_libqhyccd_sys::{
     SetQHYCCDBinMode, SetQHYCCDBitsMode, SetQHYCCDDebayerOnOff, SetQHYCCDReadMode,
-    SetQHYCCDResolution, SetQHYCCDStreamMode, QHYCCD_ERROR, QHYCCD_SUCCESS,
+    SetQHYCCDResolution, SetQHYCCDStreamMode, QHYCCD_SUCCESS,
 };
 
 use super::Camera;
