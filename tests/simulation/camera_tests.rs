@@ -183,22 +183,36 @@ fn test_simulated_camera_live_mode() {
 
 #[test]
 fn test_simulated_camera_binning() {
+    // This test verifies that setting binning alone does NOT automatically
+    // change image dimensions. This matches real QHYCCD SDK behavior and
+    // ensures we don't have the double-binning bug where ROI dimensions
+    // (which may already be in binned coordinates from ASCOM Alpaca)
+    // get binned again by the simulation.
     let config = SimulatedCameraConfig::default();
     let camera = Camera::new_simulated(config);
     camera.open().unwrap();
     camera.set_stream_mode(StreamMode::LiveMode).unwrap();
     camera.init().unwrap();
 
-    // Set 2x2 binning
-    camera.set_bin_mode(2, 2).unwrap();
+    // Get baseline dimensions with 1x1 binning
     camera.begin_live().unwrap();
+    let buffer_size = camera.get_image_size().unwrap();
+    let image = camera.get_live_frame(buffer_size).unwrap();
+    assert_eq!(image.width, 3072);
+    assert_eq!(image.height, 2048);
+    camera.end_live().unwrap();
 
+    // Set 2x2 binning WITHOUT changing ROI
+    camera.set_bin_mode(2, 2).unwrap();
+
+    camera.begin_live().unwrap();
     let buffer_size = camera.get_image_size().unwrap();
     let image = camera.get_live_frame(buffer_size).unwrap();
 
-    // With 2x2 binning, dimensions should be halved
-    assert_eq!(image.width, 1536);
-    assert_eq!(image.height, 1024);
+    // Dimensions should NOT change - binning alone doesn't affect ROI.
+    // This proves we fixed the double-binning bug.
+    assert_eq!(image.width, 3072);
+    assert_eq!(image.height, 2048);
 
     camera.end_live().unwrap();
     camera.close().unwrap();
