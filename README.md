@@ -111,14 +111,14 @@ Add the feature to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-qhyccd-rs = { version = "0.1.8", features = ["simulation"] }
+qhyccd-rs = { version = "0.1.9", features = ["simulation"] }
 ```
 
 Or use it for development dependencies:
 
 ```toml
 [dev-dependencies]
-qhyccd-rs = { version = "0.1.8", features = ["simulation"] }
+qhyccd-rs = { version = "0.1.9", features = ["simulation"] }
 ```
 
 ### Transparent Usage
