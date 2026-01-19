@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-01-19
+
 ### Fixed
 
 - Fixed simulation exposure cancellation bug: `stop_exposure()` now correctly preserves image data while `abort_exposure_and_readout()` discards it, matching QHYCCD SDK behavior
