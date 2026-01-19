@@ -448,7 +448,7 @@ impl Camera {
                 if !state.is_open {
                     return Err(eyre!(CameraNotOpenError));
                 }
-                state.cancel_exposure();
+                state.stop_exposure();
                 Ok(())
             }
         }
@@ -489,7 +489,7 @@ impl Camera {
                 if !state.is_open {
                     return Err(eyre!(CameraNotOpenError));
                 }
-                state.cancel_exposure();
+                state.abort_exposure();
                 Ok(())
             }
         }
