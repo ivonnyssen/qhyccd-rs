@@ -108,11 +108,11 @@ impl SimulatedCameraState {
         }
     }
 
-    /// Gets the current image dimensions accounting for ROI and binning
+    /// Gets the current image dimensions accounting for ROI
+    /// Note: ROI dimensions are already in binned coordinates when set via ASCOM Alpaca,
+    /// so we don't apply binning division here
     pub fn get_current_image_dimensions(&self) -> (u32, u32) {
-        let width = self.roi.width / self.binning.0;
-        let height = self.roi.height / self.binning.1;
-        (width, height)
+        (self.roi.width, self.roi.height)
     }
 
     /// Gets the number of bytes per pixel based on current bit depth
@@ -197,8 +197,17 @@ impl SimulatedCameraState {
         });
     }
 
-    /// Cancels the current exposure
-    pub fn cancel_exposure(&mut self) {
+    /// Stops the current exposure but keeps the image data
+    /// (for CancelQHYCCDExposing - image stays in camera)
+    pub fn stop_exposure(&mut self) {
+        // Mark exposure as complete by setting start time far in the past
+        // This preserves the captured image for later retrieval
+        self.exposure_start = None;
+    }
+
+    /// Aborts the current exposure and discards the image data
+    /// (for CancelQHYCCDExposingAndReadout - image is discarded)
+    pub fn abort_exposure(&mut self) {
         self.exposure_start = None;
         self.captured_image = None;
         self.captured_image_metadata = None;

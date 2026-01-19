@@ -280,7 +280,8 @@ stateDiagram-v2
     Configured --> Exposing: start_single_frame_exposure()
     Configured --> LiveMode: begin_live()
     Exposing --> Configured: get_single_frame()
-    Exposing --> Configured: cancel_exposure()
+    Exposing --> Configured: stop_exposure()
+    Exposing --> Configured: abort_exposure_and_readout()
     LiveMode --> Configured: stop_live()
     Configured --> Open: reset
     Open --> Closed: close()
@@ -294,7 +295,7 @@ The `Camera` struct provides methods for:
 - Configuration: `set_stream_mode()`, `set_roi()`, `set_bin_mode()`, `set_bit_mode()`, `set_debayer()`
 - Parameter control: `is_control_available()`, `set_parameter()`, `get_parameter()`, `get_parameter_min_max_step()`
 - Information: `get_chip_info()`, `get_effective_area()`, `get_overscan_area()`, `get_firmware_version()`, `get_model()`, `get_type()`
-- Imaging: `start_single_frame_exposure()`, `get_single_frame()`, `begin_live()`, `get_live_frame()`, `stop_live()`, `get_exposure_remaining()`, `cancel_exposure()`
+- Imaging: `start_single_frame_exposure()`, `get_single_frame()`, `begin_live()`, `get_live_frame()`, `stop_live()`, `get_exposure_remaining()`, `stop_exposure()`, `abort_exposure_and_readout()`
 - Readout modes: `get_number_of_readout_modes()`, `get_readout_mode_name()`, `get_readout_mode_resolution()`, `set_readout_mode()`, `get_readout_mode()`
 - Filter wheel: `is_cfw_plugged_in()`
 
@@ -619,13 +620,16 @@ sequenceDiagram
     App->>Camera: start_single_frame_exposure()
     Camera->>SimState: start_exposure()
     SimState->>SimState: exposure_start = now()
+    SimState->>SimState: get_current_image_dimensions()
+    SimState->>ImgGen: generate_16bit(w, h, channels)
+    ImgGen-->>SimState: image_data
+    SimState->>SimState: Store captured_image and metadata
 
     App->>Camera: get_single_frame()
     Camera->>SimState: is_exposure_complete()?
     SimState-->>Camera: true
-    Camera->>SimState: get_current_image_dimensions()
-    Camera->>ImgGen: generate_16bit(w, h, channels)
-    ImgGen-->>Camera: image_data
+    Camera->>SimState: Take captured_image
+    SimState-->>Camera: ImageData
     Camera-->>App: Ok(ImageData)
 ```
 
@@ -684,6 +688,8 @@ Located in `src/simulation/state.rs`. Maintains runtime state for simulated came
 - `live_mode_active`: Live streaming state
 - `exposure_start`: Exposure start time
 - `exposure_duration_us`: Exposure duration
+- `captured_image`: Pre-generated image data (available after exposure completes)
+- `captured_image_metadata`: Dimensions and metadata for the captured image
 - `filter_wheel_position`: Current filter (0-indexed)
 - `target_temperature`: Target cooler temp
 - `current_temperature`: Simulated actual temp
@@ -692,14 +698,15 @@ Located in `src/simulation/state.rs`. Maintains runtime state for simulated came
 
 **Key Methods:**
 - `new()`: Initialize from config with default parameter values
-- `get_current_image_dimensions()`: Calculate dimensions with ROI and binning
+- `get_current_image_dimensions()`: Returns ROI dimensions directly (already in binned coordinates when set via ASCOM Alpaca)
 - `get_bytes_per_pixel()`: 1 for 8-bit, 2 for 16-bit
 - `get_channels()`: 1 for mono, 3 for color with debayer
 - `calculate_buffer_size()`: Total buffer size needed
 - `get_remaining_exposure_us()`: Time until exposure complete
 - `is_exposure_complete()`: Check if exposure finished
-- `start_exposure()`: Begin exposure timing
-- `cancel_exposure()`: Cancel ongoing exposure
+- `start_exposure()`: Begin exposure timing and pre-generate image data
+- `stop_exposure()`: Stop exposure but preserve image data (for retrieval with `get_single_frame()`)
+- `abort_exposure()`: Abort exposure and discard image data
 - `update_temperature()`: Simulate cooling behavior
 
 **Temperature Simulation:**
@@ -708,6 +715,22 @@ The `update_temperature()` method simulates realistic cooling behavior:
 - Cooling rate: up to 0.1°C per update at full PWM
 - When cooler off: Temperature warms toward ambient (20°C)
 - Temperature stored in `parameters[CurTemp]`
+
+**ROI and Binning Coordinate System:**
+
+The simulation handles ROI (Region of Interest) dimensions in a way that's compatible with ASCOM Alpaca integration:
+
+- ROI dimensions in `SimulatedCameraState` are stored in **binned coordinates**
+- When binning changes in an ASCOM Alpaca server, the server automatically scales the ROI dimensions by the binning factor
+- `get_current_image_dimensions()` returns the ROI dimensions directly without applying binning division
+- This matches the behavior of the QHYCCD SDK where `SetQHYCCDResolution()` is called after `SetQHYCCDBinMode()`
+
+For example:
+- Full frame at 1×1 binning: 3072×2048 pixels
+- When binning changes to 2×2, the ASCOM Alpaca server updates ROI to 1536×1024 (already binned)
+- `get_current_image_dimensions()` returns 1536×1024 directly (not 768×512)
+
+This design prevents double-binning issues and ensures the simulation generates images with the correct dimensions expected by ASCOM Alpaca clients.
 
 #### ImageGenerator
 
@@ -732,7 +755,7 @@ Located in `src/simulation/image_generator.rs`. Generates test images for simula
 - `generate_16bit()`: Create 16-bit image
 
 **Implementation:**
-Uses the `rand` crate to generate random noise. Each pattern has separate implementations for 8-bit and 16-bit output. The generators fill the provided buffer with appropriate pixel values, supporting multi-channel output for color images.
+Uses the `rand` crate to generate random noise and `rayon` for parallel processing. Each pattern has separate implementations for 8-bit and 16-bit output. The generators fill the provided buffer with appropriate pixel values, supporting multi-channel output for color images. Images are pre-generated during `start_exposure()` in the simulation backend for immediate retrieval when `get_single_frame()` is called.
 
 ## Control System
 
@@ -872,7 +895,23 @@ sequenceDiagram
 6. Optionally poll with `get_exposure_remaining()`
 7. Call `get_single_frame()` to retrieve data (blocks if not ready)
 
-For simulation, the exposure timing is tracked with `Instant` and `exposure_duration_us`. The simulated camera generates appropriate test image data when `get_single_frame()` is called.
+For simulation, the exposure timing is tracked with `Instant` and `exposure_duration_us`. The simulated camera pre-generates image data when `start_single_frame_exposure()` is called, making it available for later retrieval.
+
+**Exposure Cancellation:**
+
+There are two ways to cancel an ongoing exposure, each with different behavior:
+
+1. **`stop_exposure()`** - Stops the exposure but **preserves the image data** in the camera
+   - Corresponds to QHYCCD SDK's `CancelQHYCCDExposing()`
+   - The partially exposed image remains available for retrieval via `get_single_frame()`
+   - Useful when you want to retrieve a shorter exposure than originally planned
+
+2. **`abort_exposure_and_readout()`** - Stops the exposure and **discards the image data**
+   - Corresponds to QHYCCD SDK's `CancelQHYCCDExposingAndReadout()`
+   - No image data can be retrieved after calling this
+   - Useful when you want to immediately start a new exposure
+
+In simulation mode, these methods correctly preserve or discard the pre-generated image data accordingly.
 
 ### Live Mode
 
@@ -1281,8 +1320,9 @@ From `Cargo.toml`:
 - `tracing-attributes` (0.1.28): Tracing support
 - `enum-ordinalize-derive` (4.3.1): Enum utilities
 
-**Optional:**
-- `rand` (0.9.2): Random number generation (simulation feature only)
+**Optional (simulation feature only):**
+- `rand` (0.9.2): Random number generation for image noise
+- `rayon` (1.11.0): Parallel processing for improved simulation performance
 
 ### Development Dependencies
 
@@ -1379,6 +1419,6 @@ The public API remains 100% backward compatible. All public types are re-exporte
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: 2026-01-18*
-*qhyccd-rs Version: 0.1.7*
+*Document Version: 1.1*
+*Last Updated: 2026-01-19*
+*qhyccd-rs Version: 0.1.8+*

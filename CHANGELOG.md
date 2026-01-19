@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed simulation exposure cancellation bug: `stop_exposure()` now correctly preserves image data while `abort_exposure_and_readout()` discards it, matching QHYCCD SDK behavior
+- Fixed double-binning bug in simulation where ROI dimensions were incorrectly divided by binning factor, causing images to be half the expected size
+- Updated `get_current_image_dimensions()` to return ROI dimensions directly as they are already in binned coordinates when set via ASCOM Alpaca
+
+### Changed
+
+- Split simulation exposure cancellation into two distinct methods: `stop_exposure()` (preserves image) and `abort_exposure()` (discards image)
+- Updated design documentation to reflect exposure cancellation behavior and ROI/binning coordinate system
+
 ## [0.1.8] - 2026-01-18
 
 ### Added

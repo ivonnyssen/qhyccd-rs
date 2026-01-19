@@ -23,7 +23,11 @@ fn test_image_dimensions() {
     assert_eq!(w, 3072);
     assert_eq!(h, 2048);
 
+    // When binning changes, the ROI should be updated to binned coordinates
+    // (this is done by the ASCOM Alpaca server in practice)
     state.binning = (2, 2);
+    state.roi.width = 1536; // 3072 / 2
+    state.roi.height = 1024; // 2048 / 2
     let (w, h) = state.get_current_image_dimensions();
     assert_eq!(w, 1536);
     assert_eq!(h, 1024);
@@ -39,7 +43,7 @@ fn test_buffer_size() {
 }
 
 #[test]
-fn test_cancel_exposure() {
+fn test_stop_exposure() {
     let config = SimulatedCameraConfig::default();
     let mut state = SimulatedCameraState::new(config);
 
@@ -50,16 +54,48 @@ fn test_cancel_exposure() {
     // Exposure should be in progress
     assert!(!state.is_exposure_complete());
     assert!(state.exposure_start.is_some());
+    assert!(state.captured_image.is_some());
 
-    // Cancel the exposure
-    state.cancel_exposure();
+    // Stop the exposure (but keep image data)
+    state.stop_exposure();
 
-    // After canceling, exposure_start should be None
+    // After stopping, exposure_start should be None
     assert!(state.exposure_start.is_none());
     // is_exposure_complete returns true when exposure_start is None
     assert!(state.is_exposure_complete());
     // Remaining time should be 0
     assert_eq!(state.get_remaining_exposure_us(), 0);
+    // Image data should still be available
+    assert!(state.captured_image.is_some());
+    assert!(state.captured_image_metadata.is_some());
+}
+
+#[test]
+fn test_abort_exposure() {
+    let config = SimulatedCameraConfig::default();
+    let mut state = SimulatedCameraState::new(config);
+
+    // Set exposure time via parameter (start_exposure reads from this)
+    state.parameters.insert(Control::Exposure, 10_000_000.0); // 10 seconds - long enough for image generation and test
+    state.start_exposure();
+
+    // Exposure should be in progress
+    assert!(!state.is_exposure_complete());
+    assert!(state.exposure_start.is_some());
+    assert!(state.captured_image.is_some());
+
+    // Abort the exposure (and discard image data)
+    state.abort_exposure();
+
+    // After aborting, exposure_start should be None
+    assert!(state.exposure_start.is_none());
+    // is_exposure_complete returns true when exposure_start is None
+    assert!(state.is_exposure_complete());
+    // Remaining time should be 0
+    assert_eq!(state.get_remaining_exposure_us(), 0);
+    // Image data should be cleared
+    assert!(state.captured_image.is_none());
+    assert!(state.captured_image_metadata.is_none());
 }
 
 #[test]
@@ -167,11 +203,14 @@ fn test_buffer_size_with_binning_and_channels() {
     let mut state = SimulatedCameraState::new(config);
 
     // Set 2x2 binning, 8-bit mode, and enable debayer (3 channels)
+    // When binning changes, ROI should be updated to binned coordinates
     state.binning = (2, 2);
+    state.roi.width = 1536; // 3072 / 2
+    state.roi.height = 1024; // 2048 / 2
     state.bit_depth = 8;
     state.debayer_enabled = true;
 
-    // (3072/2) * (2048/2) * 1 byte * 3 channels = 1536 * 1024 * 3 = 4,718,592
+    // 1536 * 1024 * 1 byte * 3 channels = 4,718,592
     assert_eq!(state.calculate_buffer_size(), 4_718_592);
 }
 
