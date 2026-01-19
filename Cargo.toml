@@ -1,6 +1,6 @@
 [package]
 name = "qhyccd-rs"
-version = "0.1.8"
+version = "0.1.9"
 edition ="2021"
 rust-version = "1.68.0" # for proc-macro2 v1.0.104
 authors = ["Igor von Nyssen<igor@vonnyssen.com>"]

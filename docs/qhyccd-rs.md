@@ -1421,4 +1421,4 @@ The public API remains 100% backward compatible. All public types are re-exporte
 
 *Document Version: 1.1*
 *Last Updated: 2026-01-19*
-*qhyccd-rs Version: 0.1.8+*
+*qhyccd-rs Version: 0.1.9*
