@@ -113,7 +113,7 @@ classDiagram
         +open() Result
         +close() Result
         +set_stream_mode(mode) Result
-        +get_chip_info() Result~CCDChipInfo~
+        +get_ccd_info() Result~CCDChipInfo~
         +start_single_frame_exposure() Result
         +get_single_frame() Result~ImageData~
     }
@@ -124,8 +124,8 @@ classDiagram
         +open() Result
         +close() Result
         +get_number_of_filters() Result~u32~
-        +get_position() Result~u32~
-        +set_position(pos) Result
+        +get_fw_position() Result~u32~
+        +set_fw_position(pos) Result
     }
 
     Sdk "1" *-- "0..*" Camera : manages
@@ -282,7 +282,7 @@ stateDiagram-v2
     Exposing --> Configured: get_single_frame()
     Exposing --> Configured: stop_exposure()
     Exposing --> Configured: abort_exposure_and_readout()
-    LiveMode --> Configured: stop_live()
+    LiveMode --> Configured: end_live()
     Configured --> Open: reset
     Open --> Closed: close()
     Closed --> [*]
@@ -293,9 +293,9 @@ stateDiagram-v2
 The `Camera` struct provides methods for:
 - Device lifecycle: `open()`, `close()`, `init()`, `is_open()`
 - Configuration: `set_stream_mode()`, `set_roi()`, `set_bin_mode()`, `set_bit_mode()`, `set_debayer()`
-- Parameter control: `is_control_available()`, `set_parameter()`, `get_parameter()`, `get_parameter_min_max_step()`
-- Information: `get_chip_info()`, `get_effective_area()`, `get_overscan_area()`, `get_firmware_version()`, `get_model()`, `get_type()`
-- Imaging: `start_single_frame_exposure()`, `get_single_frame()`, `begin_live()`, `get_live_frame()`, `stop_live()`, `get_exposure_remaining()`, `stop_exposure()`, `abort_exposure_and_readout()`
+- Parameter control: `is_control_available()`, `set_parameter()`, `get_parameter()`, `get_parameter_min_max_step()`, `set_if_available()`
+- Information: `get_ccd_info()`, `get_effective_area()`, `get_overscan_area()`, `get_firmware_version()`, `get_model()`, `get_type()`
+- Imaging: `start_single_frame_exposure()`, `get_single_frame()`, `begin_live()`, `get_live_frame()`, `end_live()`, `get_remaining_exposure_us()`, `stop_exposure()`, `abort_exposure_and_readout()`
 - Readout modes: `get_number_of_readout_modes()`, `get_readout_mode_name()`, `get_readout_mode_resolution()`, `set_readout_mode()`, `get_readout_mode()`
 - Filter wheel: `is_cfw_plugged_in()`
 
@@ -321,12 +321,12 @@ sequenceDiagram
     Cam-->>FW: Ok(7.0)
     FW-->>App: Ok(7)
 
-    App->>FW: set_position(3)
+    App->>FW: set_fw_position(3)
     FW->>Cam: set_parameter(CfwPort, 3.0)
     Cam->>SDK: SetQHYCCDParam(CfwPort, 3.0)
     Note over Cam,SDK: Wheel rotates to position 3
 
-    App->>FW: get_position()
+    App->>FW: get_fw_position()
     FW->>Cam: get_parameter(CfwPort)
     Cam->>SDK: GetQHYCCDParam(CfwPort)
     SDK-->>App: 3
@@ -336,7 +336,7 @@ sequenceDiagram
 
 The `FilterWheel` struct contains a single `Camera` field and delegates all operations to it. Filter wheel operations are implemented using the camera parameter API:
 - `CfwSlotsNum` control: Returns the number of filter positions
-- `CfwPort` control: Gets/sets the current filter position (0-indexed)
+- `CfwPort` control: Gets/sets the current filter position (0-indexed, uses ASCII encoding internally)
 
 ### Type System
 
@@ -390,7 +390,7 @@ classDiagram
         Exposure
         Cooler
         CfwPort
-        +86 more...
+        +85 more...
     }
 
     class StreamMode {
@@ -409,7 +409,7 @@ classDiagram
 ```
 
 **CCDChipInfo:**
-Describes the physical sensor characteristics. Returned by `get_chip_info()`. Contains dimensions in millimeters, pixel counts, pixel sizes in micrometers, and maximum bit depth.
+Describes the physical sensor characteristics. Returned by `get_ccd_info()`. Contains dimensions in millimeters, pixel counts, pixel sizes in micrometers, and maximum bit depth.
 
 **CCDChipArea:**
 Defines rectangular regions on the sensor. Used for:
@@ -421,7 +421,7 @@ Defines rectangular regions on the sensor. Used for:
 Contains captured image data along with metadata. The `data` field is a flat `Vec<u8>` containing raw pixel data. The structure depends on `bits_per_pixel` (8 or 16) and `channels` (1 for mono, 3 for debayered color).
 
 **Control:**
-Enum with 86+ variants representing camera parameters. Each variant corresponds to a control ID in the QHYCCD SDK. Controls are organized into categories:
+Enum with 92 variants representing camera parameters. Each variant corresponds to a control ID in the QHYCCD SDK (values 0-86 plus 1024-1029). Controls are organized into categories:
 - Basic imaging: Gain, Offset, Exposure, Brightness, Contrast
 - Color: Wbr, Wbb, Wbg (white balance)
 - Temperature: Cooler, CurTemp, CurPWM, ManualPWM
@@ -449,7 +449,7 @@ classDiagram
         SetParameterError
         GetParameterError
         GetSingleFrameError
-        +22 more variants...
+        +39 more variants...
     }
 
     note for QHYError "Uses thiserror for error definitions\nIntegrates with eyre for error context"
@@ -457,7 +457,7 @@ classDiagram
 
 **Error Design:**
 
-The `QHYError` enum uses `thiserror` to derive the `Error` trait. Each variant includes an `error_code` field when applicable. The library uses `eyre::Result<T>` as the return type for all fallible operations.
+The `QHYError` enum uses `thiserror` to derive the `Error` trait with 44 variants. Each variant includes an `error_code` field when applicable, and some include the `Control` that failed. The library uses `eyre::Result<T>` as the return type for all fallible operations.
 
 Error handling flow:
 1. FFI call returns error code (typically `QHYCCD_ERROR` = `u32::MAX`)
@@ -759,7 +759,7 @@ Uses the `rand` crate to generate random noise and `rayon` for parallel processi
 
 ## Control System
 
-The library provides extensive control over camera parameters through the `Control` enum with 86+ control types.
+The library provides extensive control over camera parameters through the `Control` enum with 92 control types.
 
 ### Control Categories
 
@@ -876,7 +876,7 @@ sequenceDiagram
     Note over Camera: Exposure begins
 
     loop Check status
-        App->>Camera: get_exposure_remaining()
+        App->>Camera: get_remaining_exposure_us()
         Camera-->>App: remaining_time_us
     end
 
@@ -892,7 +892,7 @@ sequenceDiagram
 3. Configure ROI, binning, bit depth as needed
 4. Set exposure time via `set_parameter(Control::Exposure, microseconds)`
 5. Call `start_single_frame_exposure()` to begin
-6. Optionally poll with `get_exposure_remaining()`
+6. Optionally poll with `get_remaining_exposure_us()`
 7. Call `get_single_frame()` to retrieve data (blocks if not ready)
 
 For simulation, the exposure timing is tracked with `Instant` and `exposure_duration_us`. The simulated camera pre-generates image data when `start_single_frame_exposure()` is called, making it available for later retrieval.
@@ -936,7 +936,7 @@ sequenceDiagram
         Note over App: Display frame
     end
 
-    App->>Camera: stop_live()
+    App->>Camera: end_live()
 ```
 
 **Live Mode Workflow:**
@@ -947,7 +947,7 @@ sequenceDiagram
 4. Set short exposure time
 5. Call `begin_live()` to start streaming
 6. Repeatedly call `get_live_frame()` to get frames
-7. Call `stop_live()` when done
+7. Call `end_live()` when done
 
 Live mode provides continuous frame capture with minimal latency. Each call to `get_live_frame()` returns the next available frame.
 
@@ -1027,7 +1027,7 @@ camera.set_stream_mode(StreamMode::SingleFrameMode)?;
 camera.init()?;
 
 // Get chip info
-let chip_info = camera.get_chip_info()?;
+let chip_info = camera.get_ccd_info()?;
 println!("Sensor: {}x{} pixels", chip_info.image_width, chip_info.image_height);
 
 // Set exposure
@@ -1054,10 +1054,10 @@ let num_filters = fw.get_number_of_filters()?;
 println!("Filter wheel has {} positions", num_filters);
 
 // Move to position 3
-fw.set_position(3)?;
+fw.set_fw_position(3)?;
 
 // Verify position
-let pos = fw.get_position()?;
+let pos = fw.get_fw_position()?;
 assert_eq!(pos, 3);
 
 fw.close()?;
@@ -1201,7 +1201,7 @@ graph TD
 
 **Error Types:**
 
-All 27 `QHYError` variants follow the pattern:
+All 44 `QHYError` variants follow the pattern:
 - Descriptive name (e.g., `InitSDKError`, `GetParameterError`)
 - `error_code` field when applicable
 - Some include context (e.g., `GetParameterError` includes the `Control` that failed)
@@ -1228,10 +1228,14 @@ Located in `src/simulation/`:
 - `test_state.rs`: SimulatedCameraState tests
 - Tests verify state management, timing, parameter handling
 
-Simulation components also have tests in:
-- `src/tests/simulation/` for integration-style tests
-
 ### Integration Tests
+
+Located in the top-level `tests/` directory (Cargo integration tests):
+- `tests/simulation_tests.rs`: Entry point for simulation integration tests
+- `tests/simulation/config_tests.rs`: SimulatedCameraConfig builder tests
+- `tests/simulation/image_generator_tests.rs`: Image generation tests
+- `tests/simulation/camera_tests.rs`: Simulated camera workflow tests
+- `tests/common/mod.rs`: Common test utilities
 
 The simulation feature enables comprehensive integration testing:
 - Test complete workflows without hardware
@@ -1322,7 +1326,7 @@ From `Cargo.toml`:
 
 **Optional (simulation feature only):**
 - `rand` (0.9.2): Random number generation for image noise
-- `rayon` (1.11.0): Parallel processing for improved simulation performance
+- `rayon` (1.10): Parallel processing for improved simulation performance
 
 ### Development Dependencies
 
@@ -1343,29 +1347,29 @@ The `libqhyccd-sys` crate links against the system-installed QHYCCD library via:
 ```
 qhyccd-rs/
 ├── src/
-│   ├── lib.rs              # Main library root (104 lines) - module declarations and re-exports
-│   ├── backend.rs          # Internal backend types (78 lines, pub(crate))
-│   ├── control.rs          # Control enum with 86+ variants (236 lines)
-│   ├── error.rs            # QHYError enum with 27 error types (106 lines)
-│   ├── types.rs            # Public data types (99 lines)
-│   ├── sdk.rs              # Sdk implementation (312 lines)
-│   ├── filter_wheel.rs     # FilterWheel implementation (175 lines)
+│   ├── lib.rs              # Main library root (103 lines) - module declarations and re-exports
+│   ├── backend.rs          # Internal backend types (74 lines, pub(crate))
+│   ├── control.rs          # Control enum with 92 variants (236 lines)
+│   ├── error.rs            # QHYError enum with 44 error types (108 lines)
+│   ├── types.rs            # Public data types (101 lines)
+│   ├── sdk.rs              # Sdk implementation (315 lines)
+│   ├── filter_wheel.rs     # FilterWheel implementation (171 lines)
 │   ├── camera/             # Camera module (7 sub-modules by responsibility)
-│   │   ├── mod.rs          # Camera struct, basic methods (91 lines)
-│   │   ├── lifecycle.rs    # open, close, init, is_open (216 lines)
-│   │   ├── configuration.rs # stream mode, ROI, binning, debayer (261 lines)
-│   │   ├── readout_modes.rs # readout mode queries (215 lines)
-│   │   ├── info.rs         # model, firmware, chip info (343 lines)
-│   │   ├── imaging.rs      # live/single frame capture (496 lines)
-│   │   └── parameters.rs   # parameter get/set/check (315 lines)
-│   ├── mocks.rs            # Mock FFI for testing
+│   │   ├── mod.rs          # Camera struct, basic methods (89 lines)
+│   │   ├── lifecycle.rs    # open, close, init, is_open (203 lines)
+│   │   ├── configuration.rs # stream mode, ROI, binning, debayer (264 lines)
+│   │   ├── readout_modes.rs # readout mode queries (203 lines)
+│   │   ├── info.rs         # model, firmware, chip info (331 lines)
+│   │   ├── imaging.rs      # live/single frame capture (497 lines)
+│   │   └── parameters.rs   # parameter get/set/check (304 lines)
+│   ├── mocks.rs            # Mock FFI for testing (214 lines)
 │   ├── simulation/         # Simulation feature
 │   │   ├── mod.rs          # Public API
 │   │   ├── config.rs       # SimulatedCameraConfig
 │   │   ├── state.rs        # SimulatedCameraState
 │   │   ├── image_generator.rs  # Image generation
 │   │   └── test_state.rs   # State tests
-│   ├── tests/              # Integration tests
+│   ├── tests/              # Unit tests (with mocked FFI)
 │   │   ├── mod.rs
 │   │   ├── sdk_tests.rs
 │   │   ├── camera_tests.rs
@@ -1374,18 +1378,27 @@ qhyccd-rs/
 │       ├── LiveFrameMode.rs
 │       ├── SingleFrameMode.rs
 │       └── test.rs
+├── tests/                  # Integration tests (simulation feature)
+│   ├── simulation_tests.rs
+│   ├── common/
+│   │   └── mod.rs
+│   └── simulation/
+│       ├── mod.rs
+│       ├── config_tests.rs
+│       ├── image_generator_tests.rs
+│       └── camera_tests.rs
 └── libqhyccd-sys/
     ├── Cargo.toml
     ├── lib.rs              # FFI declarations
     └── build.rs            # Build script (if needed)
 ```
 
-The library is organized into 13 well-defined modules, reducing the original monolithic `lib.rs` from 2,866 lines to just 104 lines. The public API is now composed of:
+The library is organized into 13 well-defined modules, reducing the original monolithic `lib.rs` from 2,866 lines to just 103 lines. The public API is now composed of:
 
 **Top-level modules** (6 modules + 7 camera sub-modules):
 - `lib.rs`: Module declarations and public re-exports only
-- `control.rs`: Control enum with all camera control parameters
-- `error.rs`: QHYError enum with all error variants using thiserror
+- `control.rs`: Control enum with 92 camera control parameters
+- `error.rs`: QHYError enum with 44 error variants using thiserror
 - `types.rs`: Public data types (StreamMode, CCDChipInfo, ImageData, etc.)
 - `sdk.rs`: SDK initialization, camera discovery, resource management
 - `filter_wheel.rs`: Filter wheel control and operations
@@ -1419,6 +1432,6 @@ The public API remains 100% backward compatible. All public types are re-exporte
 
 ---
 
-*Document Version: 1.1*
-*Last Updated: 2026-01-19*
+*Document Version: 1.2*
+*Last Updated: 2026-02-08*
 *qhyccd-rs Version: 0.1.9*
