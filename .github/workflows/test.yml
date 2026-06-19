@@ -28,7 +28,7 @@ jobs:
         # toolchain
         toolchain: [stable, beta]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install libusb (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         continue-on-error: true
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     name: ubuntu / stable / minimal-versions
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install libusb (Ubuntu)
         continue-on-error: true
         id: cache-libusb-minimal
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     name: ubuntu / stable / coverage
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install libusb (Ubuntu)
         continue-on-error: true
         id: cache-libusb-coverage
